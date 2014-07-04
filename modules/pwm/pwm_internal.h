@@ -3,11 +3,7 @@
 
 #define DRV_NAME		"pwm"
 #define DRV_REV			"r1"
-<<<<<<< HEAD
-#define PWM_MAJOR	    0
-=======
 #define PWM_MAJOR	    247
->>>>>>> 5ef1ffc02771326e2a35de72a119c917f935b977
 
 #define NR_OF_CHANNELS  2
 #define HW_PWM_CH		0  
@@ -66,3 +62,4 @@ struct ClockRegisters
 extern int debug;
 
 #endif //PWM_INTERNAL_H
+
