@@ -1,9 +1,7 @@
 
-#include <linux/cdev.h>
 #include <linux/fs.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
-#include <linux/slab.h>			//kzalloc
 #include <linux/ioctl.h>
 #include <linux/uaccess.h>		//copy_[from/to]_user
 
@@ -13,10 +11,10 @@
 
 #include "example.h"
 
-#define debug(format, arg...) do { if( debug & 1 ) pr_info( DRV_NAME ": %s: " format "\n", __FUNCTION__, ## arg ); } while (0)
-#define error(format, arg...) pr_err( DRV_NAME ": " format "\n", ## arg )
+#define trace(format, arg...) do { if( debug & 1 ) pr_info( DRV_NAME ": %s: " format "\n", __FUNCTION__, ## arg ); } while (0)
 #define info(format, arg...) pr_info( DRV_NAME ": " format "\n", ## arg )
 #define warning(format, arg...) pr_warn( DRV_NAME ": " format "\n", ## arg )
+#define error(format, arg...) pr_err( DRV_NAME ": " format "\n", ## arg )
 
 static int g_Major = 0;
 static struct class* g_Class = NULL;
@@ -35,7 +33,7 @@ MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
 int example_get_status(struct example_status* arg)
 {
 	unsigned long flags;
-	debug("");
+	trace("");
 	spin_lock_irqsave( &g_Lock, flags );
 	arg->status = g_Status;
 	spin_unlock_irqrestore( &g_Lock, flags );
@@ -46,7 +44,7 @@ EXPORT_SYMBOL(example_get_status);
 int example_set_status(struct example_status* arg)
 {
 	unsigned long flags;
-	debug("new value: %d", arg->status);
+	trace("new value: %d", arg->status);
 	spin_lock_irqsave( &g_Lock, flags );
 	g_Status = arg->status;
 	spin_unlock_irqrestore( &g_Lock, flags );
@@ -60,7 +58,7 @@ static long example_ioctl(struct file *file, unsigned int command, unsigned long
 {
 	long ret = -EFAULT;
 	struct example_status status;
-	debug("");
+	trace("");
 	switch( command ) {
 		case EXAMPLE_SET_STATUS:
 			if( copy_from_user( &status, (void*)arg, sizeof(struct example_status) ) )
@@ -83,13 +81,13 @@ static long example_ioctl(struct file *file, unsigned int command, unsigned long
 
 static int example_open(struct inode *inode, struct file *file)
 {
-	debug("");
+	trace("");
 	return 0;
 }
 
 static int example_release(struct inode *inode, struct file *file)
 {
-	debug("");
+	trace("");
 	return 0;
 }
 
@@ -105,7 +103,7 @@ static const struct file_operations example_fops = {
 static ssize_t show_status(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	struct example_status status;
-	debug("");
+	trace("");
 	if( !example_get_status( &status ) ) {
 		return snprintf(buf, PAGE_SIZE, "Status: %i\n", status.status);
 	}
@@ -115,13 +113,13 @@ static ssize_t show_status(struct device *dev, struct device_attribute *attr, ch
 static ssize_t store_status(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	struct example_status status;
-	debug("");
+	trace("");
 	if( sscanf(buf, "%d", &status.status) == 1 ) {
 		if( example_set_status( &status ) ) {
-			printk( KERN_ERR DRV_NAME ": error setting status\n" );
+			error( "error setting status\n" );
 		}
 	} else {
-		printk( KERN_ERR DRV_NAME ": error reading status\n" );
+		error( "error reading status\n" );
 	}
 	return count;
 }
@@ -132,7 +130,7 @@ static DEVICE_ATTR( status, S_IWUSR | S_IRUGO, show_status, store_status );
 static int __init example_init(void)
 {
 	int ret = -1;
-	debug("");
+	trace("");
 	
 	g_Major = register_chrdev( EXAMPLE_MAJOR, DRV_NAME, &example_fops );
 	if( g_Major < 0 ) {
@@ -173,7 +171,7 @@ out:
 
 static void __exit example_exit(void)
 {
-	debug("");
+	trace("");
 	
 	device_remove_file( g_Device, &dev_attr_status );
 	device_destroy( g_Class, MKDEV(g_Major, 0) );
@@ -181,7 +179,7 @@ static void __exit example_exit(void)
 	class_destroy( g_Class );
 	unregister_chrdev( g_Major, DRV_NAME );
 
-    info("unloaded.");
+	info("unloaded.");
 }
 
 module_init(example_init);
@@ -191,4 +189,3 @@ MODULE_AUTHOR("Mark Jansen <mark@jansen.co.nl>");
 MODULE_DESCRIPTION("Example driver");
 MODULE_LICENSE("GPL");
 MODULE_VERSION(DRV_REV);
-
