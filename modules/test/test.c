@@ -3,7 +3,7 @@
 #include <sys/types.h>
 #include <fcntl.h>
 
-#include "../modules/example/example.h"
+#include "../example/example.h"
 
 
 int read( int fd, struct example_status* status )
