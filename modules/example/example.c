@@ -147,9 +147,9 @@ static int __init example_init(void)
 		goto out_chrdev;
 	}
 	
-	g_Device = device_create( g_Class, NULL, MKDEV(g_Major, 0), NULL, DRV_NAME "_device" );
+	g_Device = device_create( g_Class, NULL, MKDEV(g_Major, 0), NULL, DRV_NAME );
 	if( IS_ERR(g_Class) ) {
-		error( "could not create %s_device", DRV_NAME );
+		error( "could not create %s", DRV_NAME );
 		ret = PTR_ERR( g_Device );
 		goto out_device;
 	}
