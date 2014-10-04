@@ -2,8 +2,9 @@
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <fcntl.h>
+#include <unistd.h>
 
-#include "../example/example.h"
+#include <example/example.h>
 
 
 int read( int fd, struct example_status* status )
@@ -29,7 +30,7 @@ int write( int fd, struct example_status* status )
 
 int main()
 {
-	struct example_status status;
+	example_status status;
 	int fd = open("/dev/example", O_RDWR);
 	if (fd == -1) {
 		perror( "open" );
