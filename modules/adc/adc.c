@@ -3,6 +3,7 @@
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/ioctl.h>
+//#include <linux/i2c.h>
 #include <linux/uaccess.h>		//copy_[from/to]_user
 
 #define DRV_NAME		"adc"
@@ -20,18 +21,84 @@ static int g_Major = 0;
 static struct class* g_Class = NULL;
 static struct device* g_Device = NULL;
 
+static DEFINE_SPINLOCK(g_Lock);
+static struct adc_config g_Config;
 
 static int debug = 0;
 module_param(debug, int, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
+
+#if 0
+struct adc_device {
+	struct i2c_client *client;
+};
+#endif
+
+
+
+int adc_get_data(struct adc_data* arg)
+{
+	adc_config cfg;
+	trace("");
+	adc_get_config( &cfg );
+	
+	// read
+	
+	return -EINVAL;
+}
+EXPORT_SYMBOL(adc_get_data);
+
+int adc_get_config(struct adc_config* arg)
+{
+	unsigned long flags;
+	trace("");
+	spin_lock_irqsave( &g_Lock, flags );
+	arg->mode = g_Config.mode;
+	spin_unlock_irqrestore( &g_Lock, flags );
+	return 0;
+}
+EXPORT_SYMBOL(adc_get_config);
+
+int adc_set_config(struct adc_config* arg)
+{
+	unsigned long flags;
+	trace("");
+	spin_lock_irqsave( &g_Lock, flags );
+	g_Config.mode = arg->mode;
+	spin_unlock_irqrestore( &g_Lock, flags );
+	return 0;
+}
+EXPORT_SYMBOL(adc_set_config);
 
 
 // file operations
 static long adc_ioctl(struct file *file, unsigned int command, unsigned long arg)
 {
 	long ret = -EFAULT;
+	struct adc_data data;
+	struct adc_config config;
 	trace("");
 	switch( command ) {
+		case ADC_GET_DATA:
+			if( copy_from_user( &data, (void*)arg, sizeof(struct adc_data) ) )
+					return -EFAULT;
+				ret = adc_get_data( &data );
+			if( copy_to_user( (void*)arg, &data, sizeof(struct adc_data) ) )
+				return -EFAULT;
+			break;
+		case ADC_GET_CONFIG:
+			if( !adc_get_config( &config ) )
+				ret = 0;
+			else
+				return -ENXIO;
+			if( copy_to_user( (void*)arg, &config, sizeof(struct adc_config) ) )
+				return -EFAULT;
+			break;
+		case ADC_SET_CONFIG:
+			if( copy_from_user( &config, (void*)arg, sizeof(struct adc_config) ) )
+				return -EFAULT;
+			ret = adc_set_config( &config );
+			break;
 		default:
 			break;
 	}
@@ -51,22 +118,55 @@ static ssize_t show_status(struct device *dev, struct device_attribute *attr, ch
 	return snprintf(buf, PAGE_SIZE, "Status: 0\n");
 }
 
-//static ssize_t store_status(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
-//{
-//	struct adc_status status;
-//	trace("");
-//	if( sscanf(buf, "%d", &status.status) == 1 ) {
-//		if( adc_set_status( &status ) ) {
-//			error( "error setting status\n" );
-//		}
-//	} else {
-//		error( "error reading status\n" );
-//	}
-//	return count;
-//}
-
 static DEVICE_ATTR( status, S_IWUSR | S_IRUGO, show_status, NULL );
 
+#if 0
+static int __devinit adc_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
+{
+	struct adc_device *dev;
+
+	if( !i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA | I2C_FUNC_SMBUS_WORD_DATA |
+			I2C_FUNC_SMBUS_I2C_BLOCK) ) {
+		error( "not all functionality supported" );
+		return -ENODEV;
+	}
+	
+	dev = kzalloc( sizeof(struct adc_device), GFP_KERNEL );
+	if( dev == NULL ) {
+		error( "out of memory" );
+		return -ENOMEM;
+	}
+
+	dev->client = client;
+	i2c_set_clientdata( client, dev );
+
+	return 0;
+}
+
+static int __devexit adc_i2c_remove( struct i2c_client *client )
+{
+	struct adc_device *dev = i2c_get_clientdata( client );
+
+	kfree(dev);
+	return 0;
+}
+
+
+
+static const struct i2c_device_id adc_i2c_id[] = {
+	{ "MCP3021", 0 },
+	{ }
+};
+
+static struct i2c_driver adc_i2c_driver = {
+	.probe = adc_i2c_probe,
+	.remove = __devexit_p(adc_i2c_remove),
+	.id_table = adc_i2c_id,
+	.driver = {
+		.name = DRV_NAME,
+	},
+};
+#endif
 
 static int __init adc_init(void)
 {
@@ -96,6 +196,12 @@ static int __init adc_init(void)
 	}
 	
 	ret = device_create_file( g_Device, &dev_attr_status );
+
+#if 0
+	if( !ret ) {
+		ret = i2c_add_driver( &adc_i2c_driver );
+	}
+#endif
 
 	info( DRV_REV " loaded, major: %d", g_Major );
 
