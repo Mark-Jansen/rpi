@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# this script will upload all files you specify to the folder 'modtest' on the rpi
+
+
+if [ $# -gt 1 ]; then
+	to=${!#}	#the target is the last arg
+	for f; do
+		if [ $f != $to ]; then
+			echo "Uploading $f to $to"
+			scp $f root@$to:/modtest/
+		fi
+	done
+else
+	echo "usage: upload [file/files] target"
+fi
