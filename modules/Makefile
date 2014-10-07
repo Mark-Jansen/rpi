@@ -1,6 +1,6 @@
 
 # add each new target to 'TARGETS'
-TARGETS = example
+TARGETS = example pwm
 PREFIX = $(shell echo `pwd`)/../build/modules/
 
 .PHONY: all clean
