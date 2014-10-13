@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# this script will upload all files you specify to the folder 'modtest' on the rpi
+# this script will upload all files you specify to the folder '/root' on the rpi
 
 
 if [ $# -gt 1 ]; then
@@ -8,7 +8,7 @@ if [ $# -gt 1 ]; then
 	for f; do
 		if [ $f != $to ]; then
 			echo "Uploading $f to $to"
-			sshpass -p 'root' scp $f root@$to:/modtest/
+			sshpass -p 'root' scp $f root@$to:/root/
 		fi
 	done
 else

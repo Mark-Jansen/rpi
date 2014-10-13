@@ -7,6 +7,13 @@
 #include "adc_internal.h"
 #include "adc.h"
 
+#if !defined(CONFIG_I2C) && !defined(CONFIG_I2C_MODULE)
+#error "I2C should be enabled in the kernel!"
+#endif
+
+#if !defined(CONFIG_I2C_BOARDINFO)
+#error "I2C boardinfo should be enabled in the kernel!"
+#endif
 
 static int __devinit adc_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
@@ -40,6 +47,12 @@ static int __devexit adc_i2c_remove( struct i2c_client *client )
 	return 0;
 }
 
+static const struct i2c_board_info adc_i2c_board_info[] = {
+	{
+		I2C_BOARD_INFO("MCP3021", 4),
+		.platform_data = &adc_i2c_board_info,
+	},
+};
 
 static const struct i2c_device_id adc_i2c_id[] = {
 	{ "MCP3021", 0 },
@@ -50,6 +63,7 @@ static struct i2c_driver adc_i2c_driver = {
 	.probe = adc_i2c_probe,
 	.remove = __devexit_p(adc_i2c_remove),
 	.id_table = adc_i2c_id,
+	.class = I2C_CLASS_HWMON,
 	.driver = {
 		.name = DRV_NAME,
 	},
@@ -58,6 +72,7 @@ static struct i2c_driver adc_i2c_driver = {
 int __init adc_i2c_init()
 {
 	trace("");
+	i2c_register_board_info( 1, adc_i2c_board_info, ARRAY_SIZE(adc_i2c_board_info) );
 	return i2c_add_driver( &adc_i2c_driver );
 }
 
