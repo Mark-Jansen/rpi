@@ -20,6 +20,7 @@ CC=$(CROSS_CC)
 PWD:=$(shell pwd)
 EXTRA_CFLAGS += -DEXPORT_SYMTAB
 obj-m += $(MODULE_NAME).o
+$(MODULE_NAME)-objs := adc_driver.o i2c.o
 
 all:
 	$(MAKE) CROSS_COMPILE=$(CROSS_COMPILE) ARCH=$(ARCH) -C $(KDIR) SUBDIRS=$(PWD) modules

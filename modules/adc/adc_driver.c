@@ -3,19 +3,13 @@
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/ioctl.h>
-//#include <linux/i2c.h>
-#include <linux/uaccess.h>		//copy_[from/to]_user
+#include <linux/uaccess.h>		// copy_[from/to]_user
+//#include <linux/slab.h>			// kzalloc
 
-#define DRV_NAME		"adc"
-#define DRV_REV			"r1"
-#define ADC_MAJOR	253
 
+#include "adc_internal.h"
 #include "adc.h"
 
-#define trace(format, arg...) do { if( debug & 1 ) pr_info( DRV_NAME ": %s: " format "\n", __FUNCTION__, ## arg ); } while (0)
-#define info(format, arg...) pr_info( DRV_NAME ": " format "\n", ## arg )
-#define warning(format, arg...) pr_warn( DRV_NAME ": " format "\n", ## arg )
-#define error(format, arg...) pr_err( DRV_NAME ": " format "\n", ## arg )
 
 static int g_Major = 0;
 static struct class* g_Class = NULL;
@@ -24,21 +18,14 @@ static struct device* g_Device = NULL;
 static DEFINE_SPINLOCK(g_Lock);
 static struct adc_config g_Config;
 
-static int debug = 0;
+int debug = 0;
 module_param(debug, int, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
-
-#if 0
-struct adc_device {
-	struct i2c_client *client;
-};
-#endif
-
 
 
 int adc_get_data(struct adc_data* arg)
 {
-	adc_config cfg;
+	struct adc_config cfg;
 	trace("");
 	adc_get_config( &cfg );
 	
@@ -120,53 +107,6 @@ static ssize_t show_status(struct device *dev, struct device_attribute *attr, ch
 
 static DEVICE_ATTR( status, S_IWUSR | S_IRUGO, show_status, NULL );
 
-#if 0
-static int __devinit adc_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
-{
-	struct adc_device *dev;
-
-	if( !i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA | I2C_FUNC_SMBUS_WORD_DATA |
-			I2C_FUNC_SMBUS_I2C_BLOCK) ) {
-		error( "not all functionality supported" );
-		return -ENODEV;
-	}
-	
-	dev = kzalloc( sizeof(struct adc_device), GFP_KERNEL );
-	if( dev == NULL ) {
-		error( "out of memory" );
-		return -ENOMEM;
-	}
-
-	dev->client = client;
-	i2c_set_clientdata( client, dev );
-
-	return 0;
-}
-
-static int __devexit adc_i2c_remove( struct i2c_client *client )
-{
-	struct adc_device *dev = i2c_get_clientdata( client );
-
-	kfree(dev);
-	return 0;
-}
-
-
-
-static const struct i2c_device_id adc_i2c_id[] = {
-	{ "MCP3021", 0 },
-	{ }
-};
-
-static struct i2c_driver adc_i2c_driver = {
-	.probe = adc_i2c_probe,
-	.remove = __devexit_p(adc_i2c_remove),
-	.id_table = adc_i2c_id,
-	.driver = {
-		.name = DRV_NAME,
-	},
-};
-#endif
 
 static int __init adc_init(void)
 {
@@ -197,11 +137,9 @@ static int __init adc_init(void)
 	
 	ret = device_create_file( g_Device, &dev_attr_status );
 
-#if 0
 	if( !ret ) {
-		ret = i2c_add_driver( &adc_i2c_driver );
+		ret = adc_i2c_init();
 	}
-#endif
 
 	info( DRV_REV " loaded, major: %d", g_Major );
 
@@ -220,6 +158,7 @@ static void __exit adc_exit(void)
 {
 	trace("");
 	
+	adc_i2c_exit();
 	device_remove_file( g_Device, &dev_attr_status );
 	device_destroy( g_Class, MKDEV(g_Major, 0) );
 	class_unregister( g_Class );
