@@ -72,6 +72,7 @@ static struct i2c_driver adc_i2c_driver = {
 int __init adc_i2c_init()
 {
 	trace("");
+	//instead use i2c_new_device
 	i2c_register_board_info( 1, adc_i2c_board_info, ARRAY_SIZE(adc_i2c_board_info) );
 	return i2c_add_driver( &adc_i2c_driver );
 }
