@@ -8,7 +8,7 @@ if [ $# -gt 1 ]; then
 	for f; do
 		if [ $f != $to ]; then
 			echo "Uploading $f to $to"
-			scp $f root@$to:/modtest/
+			sshpass -p 'root' scp $f root@$to:/modtest/
 		fi
 	done
 else
