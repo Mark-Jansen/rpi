@@ -9,11 +9,16 @@ endif
 
 CROSS_COMPILE:=$(L_BUILDROOT)/output/host/usr/bin/arm-linux-
 
-.PHONY: all clean
+all: test i2c_adc
 
-all:
-	$(CROSS_COMPILE)g++ test.cpp -o test -I../modules
+.PHONY: all, clean
+
+test: test.cpp
+	$(CROSS_COMPILE)g++ test.cpp -o ../build/test -I../modules
+
+i2c_adc: i2c_adc.cpp
+	$(CROSS_COMPILE)g++ i2c_adc.cpp -o ../build/i2c_adc -I../modules
 
 clean:
-	rm -rf *.o test
+	rm -f *.o ../build/test ../build/i2c_adc
 
