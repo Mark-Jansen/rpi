@@ -47,15 +47,14 @@ static int __devexit adc_i2c_remove( struct i2c_client *client )
 	return 0;
 }
 
-static const struct i2c_board_info adc_i2c_board_info[] = {
-	{
-		I2C_BOARD_INFO("MCP3021", 4),
-		.platform_data = &adc_i2c_board_info,
-	},
+static struct i2c_board_info adc_i2c_board_info = {
+	I2C_BOARD_INFO("MCP3422A0", 4),
+	.platform_data = &adc_i2c_board_info,
 };
+static struct i2c_client *g_Client;
 
 static const struct i2c_device_id adc_i2c_id[] = {
-	{ "MCP3021", 0 },
+	{ "MCP3422A0", 0 },
 	{ }
 };
 
@@ -71,15 +70,34 @@ static struct i2c_driver adc_i2c_driver = {
 
 int __init adc_i2c_init()
 {
+	struct i2c_adapter *adap;
+
+	int busnum = 1;
 	trace("");
-	//instead use i2c_new_device
-	i2c_register_board_info( 1, adc_i2c_board_info, ARRAY_SIZE(adc_i2c_board_info) );
+
+	adap = i2c_get_adapter(busnum);
+	if (!adap) {
+		error( "failed to get adapter i2c%d\n", busnum );
+		return -ENODEV;
+	}
+	g_Client = i2c_new_device(adap, &adc_i2c_board_info);
+	if (!g_Client) {
+		error( "failed to register %s to i2c%d\n", adc_i2c_board_info.type, busnum);
+	}
+
+	//i2c_put_adapter(adap);
+
 	return i2c_add_driver( &adc_i2c_driver );
 }
 
 void __devexit adc_i2c_exit()
 {
 	trace("");
+	if( g_Client ) {
+		i2c_unregister_device( g_Client );
+		g_Client = NULL;
+	}
+	
 	i2c_del_driver( &adc_i2c_driver );
 }
 
