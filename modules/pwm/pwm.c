@@ -5,11 +5,11 @@
 #include <linux/ioctl.h>
 #include <linux/uaccess.h>		//copy_[from/to]_user
 
-#define DRV_NAME		"example"
+#define DRV_NAME		"pwm"
 #define DRV_REV			"r1"
-#define EXAMPLE_MAJOR	252
+#define PWM_MAJOR	252
 
-#include "example.h"
+#include "pwm.h"
 
 #define trace(format, arg...) do { if( debug & 1 ) pr_info( DRV_NAME ": %s: " format "\n", __FUNCTION__, ## arg ); } while (0)
 #define info(format, arg...) pr_info( DRV_NAME ": " format "\n", ## arg )
@@ -17,12 +17,14 @@
 #define error(format, arg...) pr_err( DRV_NAME ": " format "\n", ## arg )
 
 static int g_Major = 0;
-static struct class* g_Class = NULL;
-static struct device* g_Device = NULL;
+//static struct class* g_Class = NULL;
+//static struct device* g_Device = NULL;
 
 
 static DEFINE_SPINLOCK(g_Lock);
 static int g_Status = 0;
+
+static struct pwm_config g_Config;
 
 
 static int debug = 0;
@@ -30,7 +32,7 @@ module_param(debug, int, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
 
 
-int example_get_status(struct example_status* arg)
+int pwm_get_status(struct pwm_status* arg)
 {
 	unsigned long flags;
 	trace("");
@@ -39,9 +41,9 @@ int example_get_status(struct example_status* arg)
 	spin_unlock_irqrestore( &g_Lock, flags );
 	return 0;
 }
-EXPORT_SYMBOL(example_get_status);
+EXPORT_SYMBOL(pwm_get_status);
 
-int example_set_status(struct example_status* arg)
+int pwm_set_status(struct pwm_status* arg)
 {
 	unsigned long flags;
 	trace("new value: %d", arg->status);
@@ -50,61 +52,139 @@ int example_set_status(struct example_status* arg)
 	spin_unlock_irqrestore( &g_Lock, flags );
 	return 0;
 }
-EXPORT_SYMBOL(example_set_status);
+EXPORT_SYMBOL(pwm_set_status);
+
+int pwm_get_config(struct pwm_config* arg)
+{
+	unsigned long flags;
+	trace("");
+	spin_lock_irqsave( &g_Lock, flags );
+	arg->enabled = g_Config.enabled;
+	arg->period = g_Config.period;
+	arg->frequency = g_Config.frequency;
+	arg->duty_cycle = g_Config.duty_cycle;
+	spin_unlock_irqrestore( &g_Lock, flags );
+	return 0;
+}
+EXPORT_SYMBOL(pwm_get_config);
+
+int pwm_set_config(struct pwm_config* arg)
+{
+	unsigned long flags;
+	trace("new enabled: %d", arg->enabled);
+	trace("new period: %d", arg->period);
+	trace("new frequency: %d", arg->frequency);
+	trace("new duty_cycle: %d", arg->duty_cycle);
+	spin_lock_irqsave( &g_Lock, flags );
+	g_Config.enabled = arg->enabled;
+	g_Config.period = arg->period;
+	g_Config.frequency = arg->frequency;
+	g_Config.duty_cycle = arg->duty_cycle;
+	spin_unlock_irqrestore( &g_Lock, flags );
+	return 0;
+}
+EXPORT_SYMBOL(pwm_set_config);
+
+
 
 
 // file operations
-static long example_ioctl(struct file *file, unsigned int command, unsigned long arg)
+static long pwm_ioctl(struct file *file, unsigned int command, unsigned long arg)
 {
 	long ret = -EFAULT;
-	struct example_status status;
+	struct pwm_status status;
+	struct pwm_config config;
 	trace("");
 	switch( command ) {
-		case EXAMPLE_SET_STATUS:
-			if( copy_from_user( &status, (void*)arg, sizeof(struct example_status) ) )
+		case PWM_SET_STATUS:
+			if( copy_from_user( &status, (void*)arg, sizeof(struct pwm_status) ) )
 				return -EFAULT;
-			ret = example_set_status( &status );
+			ret = pwm_set_status( &status );
 			break;
-		case EXAMPLE_GET_STATUS:
-			if( !example_get_status( &status ) )
+		case PWM_GET_STATUS:
+			if( !pwm_get_status( &status ) )
 				ret = 0;
 			else
 				return -ENXIO;
-			if( copy_to_user( (void*)arg, &status, sizeof(struct example_status) ) )
+			if( copy_to_user( (void*)arg, &status, sizeof(struct pwm_status) ) )
 				return -EFAULT;
 			break;
+		case PWM_SET_CONFIG:
+			if( copy_from_user( &config, (void*)arg, sizeof(struct pwm_config) ) )
+				return -EFAULT;
+			ret = pwm_set_config( &config );
+			break;
+		case PWM_GET_CONFIG:
+			if( !pwm_get_config( &config ) )
+				ret = 0;
+			else
+				return -ENXIO;
+			if( copy_to_user( (void*)arg, &config, sizeof(struct pwm_config) ) )
+				return -EFAULT;
+			break;
+		//TEST
+		case PWM_GET_ENABLED:
+            return g_Config.enabled;
+            break;		
+		case PWM_SET_ENABLED:
+            g_Config.enabled = arg;
+			break;		
+		case PWM_GET_PERIOD:
+            return g_Config.period;
+            break;		
+		case PWM_SET_PERIOD:
+            g_Config.period = arg;
+			break;		
+		case PWM_GET_FREQUENCY:
+            return g_Config.frequency;
+            break;		
+		case PWM_SET_FREQUENCY:
+            g_Config.frequency = arg;
+			break;		
+		case PWM_GET_DUTY_CYCLE:
+            return g_Config.duty_cycle;
+            break;		
+		case PWM_SET_DUTY_CYCLE:
+            g_Config.duty_cycle = arg;
+			break;		
+			
+			
+			
+			
 		default:
 			break;
 	}
 	return ret;
 }
 
-static int example_open(struct inode *inode, struct file *file)
+
+static int pwm_open(struct inode *inode, struct file *file)
 {
 	trace("");
 	return 0;
 }
 
-static int example_release(struct inode *inode, struct file *file)
+static int pwm_release(struct inode *inode, struct file *file)
 {
 	trace("");
 	return 0;
 }
 
-static const struct file_operations example_fops = {
+
+static const struct file_operations pwm_fops = {
 	.owner				= THIS_MODULE,
-	.open				= example_open,
-	.release			= example_release,
-	.unlocked_ioctl		= example_ioctl,
+	.open				= pwm_open,
+	.release			= pwm_release,
+	.unlocked_ioctl		= pwm_ioctl,
 };
 
-
+/*
 //sysfs
 static ssize_t show_status(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	struct example_status status;
+	struct pwm_status status;
 	trace("");
-	if( !example_get_status( &status ) ) {
+	if( !pwm_get_status( &status ) ) {
 		return snprintf(buf, PAGE_SIZE, "Status: %i\n", status.status);
 	}
 	return 0;
@@ -112,10 +192,10 @@ static ssize_t show_status(struct device *dev, struct device_attribute *attr, ch
 
 static ssize_t store_status(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
-	struct example_status status;
+	struct pwm_status status;
 	trace("");
 	if( sscanf(buf, "%d", &status.status) == 1 ) {
-		if( example_set_status( &status ) ) {
+		if( pwm_set_status( &status ) ) {
 			error( "error setting status\n" );
 		}
 	} else {
@@ -125,21 +205,28 @@ static ssize_t store_status(struct device *dev, struct device_attribute *attr, c
 }
 
 static DEVICE_ATTR( status, S_IWUSR | S_IRUGO, show_status, store_status );
+*/
 
-
-static int __init example_init(void)
+static int __init pwm_init(void)
 {
 	int ret = -1;
 	trace("");
 	
-	g_Major = register_chrdev( EXAMPLE_MAJOR, DRV_NAME, &example_fops );
+    //test
+	g_Config.enabled = false;	
+	g_Config.period = 99;
+	g_Config.frequency = 5000;
+	g_Config.duty_cycle = 50;
+	
+        
+	g_Major = register_chrdev( PWM_MAJOR, DRV_NAME, &pwm_fops );
 	if( g_Major < 0 ) {
 		error( "could not register device: %d", g_Major );
 		goto out;
 	} if( g_Major == 0 ) {
-		g_Major = EXAMPLE_MAJOR;
+		g_Major = PWM_MAJOR;
 	}
-
+/*
 	g_Class = class_create( THIS_MODULE, DRV_NAME );
 	if( IS_ERR(g_Class) ) {
 		error( "could not register class %s", DRV_NAME );
@@ -165,27 +252,30 @@ out_device:
 	class_destroy( g_Class );
 out_chrdev:
 	unregister_chrdev(g_Major, DRV_NAME);
+*/
 out:
+    //quick fix 
+	ret = 0;
 	return ret;
 }
 
-static void __exit example_exit(void)
+static void __exit pwm_exit(void)
 {
 	trace("");
 	
-	device_remove_file( g_Device, &dev_attr_status );
-	device_destroy( g_Class, MKDEV(g_Major, 0) );
-	class_unregister( g_Class );
-	class_destroy( g_Class );
+	//device_remove_file( g_Device, &dev_attr_status );
+	//device_destroy( g_Class, MKDEV(g_Major, 0) );
+	//class_unregister( g_Class );
+	//class_destroy( g_Class );
 	unregister_chrdev( g_Major, DRV_NAME );
 
 	info("unloaded.");
 }
 
-module_init(example_init);
-module_exit(example_exit);
+module_init(pwm_init);
+module_exit(pwm_exit);
 
-MODULE_AUTHOR("Mark Jansen <mark@jansen.co.nl>");
-MODULE_DESCRIPTION("Example driver");
+MODULE_AUTHOR("Frank Eggink <freggink@gmail.com>");
+MODULE_DESCRIPTION("Pwm driver");
 MODULE_LICENSE("GPL");
 MODULE_VERSION(DRV_REV);
