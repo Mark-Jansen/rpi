@@ -187,7 +187,7 @@ out:
 static void __exit adc_exit(void)
 {
 	trace("");
-	
+
 	adc_i2c_exit();
 	device_remove_file( g_Device, &dev_attr_config );
 	device_remove_file( g_Device, &dev_attr_chan0 );
