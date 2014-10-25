@@ -16,42 +16,44 @@ static struct class* g_Class = NULL;
 static struct device* g_Device = NULL;
 
 static DEFINE_SPINLOCK(g_Lock);
-static struct adc_config g_Config;
+static struct adc_config g_Config = {
+	.resolution = ADC_RESOLUTION_14b,
+	.gain = ADC_GAIN_1
+};
 
 int debug = 0;
 module_param(debug, int, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
 
 
-int adc_get_data(struct adc_data* arg)
+int adc_get_data(struct adc_data* data)
 {
 	struct adc_config cfg;
 	trace("");
 	adc_get_config( &cfg );
-	
-	// read
-	
-	return -EINVAL;
+	return adc_read_device( &cfg, data );
 }
 EXPORT_SYMBOL(adc_get_data);
 
-int adc_get_config(struct adc_config* arg)
+int adc_get_config(struct adc_config* cfg)
 {
 	unsigned long flags;
 	trace("");
 	spin_lock_irqsave( &g_Lock, flags );
-	arg->mode = g_Config.mode;
+	cfg->resolution = g_Config.resolution;
+	cfg->gain = g_Config.gain;
 	spin_unlock_irqrestore( &g_Lock, flags );
 	return 0;
 }
 EXPORT_SYMBOL(adc_get_config);
 
-int adc_set_config(struct adc_config* arg)
+int adc_set_config(struct adc_config* cfg)
 {
 	unsigned long flags;
 	trace("");
 	spin_lock_irqsave( &g_Lock, flags );
-	g_Config.mode = arg->mode;
+	g_Config.resolution = cfg->resolution;
+	g_Config.gain = cfg->gain;
 	spin_unlock_irqrestore( &g_Lock, flags );
 	return 0;
 }
@@ -99,13 +101,39 @@ static const struct file_operations adc_fops = {
 
 
 //sysfs
-static ssize_t show_status(struct device *dev, struct device_attribute *attr, char *buf)
+static ssize_t show_config(struct device *dev, struct device_attribute *attr, char *buf)
 {
+	struct adc_config cfg;
 	trace("");
-	return snprintf(buf, PAGE_SIZE, "Status: 0\n");
+	if( adc_get_config( &cfg ) )
+		return snprintf( buf, PAGE_SIZE, "Failed to read the config\n" );
+	return snprintf(buf, PAGE_SIZE, "Resolution : %db, Gain: %d\n", 12 + ((cfg.resolution & 0xc)>>1), cfg.gain + 1 );
 }
 
-static DEVICE_ATTR( status, S_IWUSR | S_IRUGO, show_status, NULL );
+static ssize_t show_chanx(struct device *dev, struct device_attribute *attr, char *buf, int chan)
+{
+	struct adc_data data;
+	trace("");
+	data.channel = chan;
+	if( adc_get_data( &data ) )
+		return snprintf( buf, PAGE_SIZE, "Failed to read the data\n" );
+	return snprintf(buf, PAGE_SIZE, "Value: %d\n", data.value );
+}
+
+static ssize_t show_chan0(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return show_chanx( dev, attr, buf, 0 );
+}
+
+static ssize_t show_chan1(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return show_chanx( dev, attr, buf, 1 );
+}
+
+
+static DEVICE_ATTR( config, S_IWUSR | S_IRUGO, show_config, NULL );
+static DEVICE_ATTR( chan0, S_IWUSR | S_IRUGO, show_chan0, NULL );
+static DEVICE_ATTR( chan1, S_IWUSR | S_IRUGO, show_chan1, NULL );
 
 
 static int __init adc_init(void)
@@ -135,7 +163,9 @@ static int __init adc_init(void)
 		goto out_device;
 	}
 	
-	ret = device_create_file( g_Device, &dev_attr_status );
+	ret = device_create_file( g_Device, &dev_attr_config );
+	ret |= device_create_file( g_Device, &dev_attr_chan0 );
+	ret |= device_create_file( g_Device, &dev_attr_chan1 );
 
 	if( !ret ) {
 		ret = adc_i2c_init();
@@ -159,7 +189,9 @@ static void __exit adc_exit(void)
 	trace("");
 	
 	adc_i2c_exit();
-	device_remove_file( g_Device, &dev_attr_status );
+	device_remove_file( g_Device, &dev_attr_config );
+	device_remove_file( g_Device, &dev_attr_chan0 );
+	device_remove_file( g_Device, &dev_attr_chan1 );
 	device_destroy( g_Class, MKDEV(g_Major, 0) );
 	class_unregister( g_Class );
 	class_destroy( g_Class );

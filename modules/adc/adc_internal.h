@@ -12,10 +12,6 @@
 
 extern int debug;
 
-struct adc_device {
-	struct i2c_client *client;
-};
-
 int adc_i2c_init(void);
 void adc_i2c_exit(void);
 
