@@ -3,6 +3,7 @@
 #include <linux/platform_device.h>
 #include <linux/i2c.h>
 #include <linux/slab.h>			// kzalloc
+#include <linux/delay.h>
 
 #include "adc_internal.h"
 #include "adc.h"
@@ -12,30 +13,64 @@
 #endif
 
 static struct i2c_client *g_Client;
-static DEFINE_SPINLOCK(g_I2CLock);
+static DEFINE_MUTEX(g_I2CLock);
+
+static const uint8_t kNewConversion = 0x80;
+
+static int i2c_read( char* buf, int count )
+{
+	int ret = -ENODEV;
+	trace("");
+	mutex_lock( &g_I2CLock );
+	if( g_Client ) {
+		ret = i2c_master_recv( g_Client, buf, count );
+	}
+	mutex_unlock( &g_I2CLock );
+	return (count == ret) ? 0 : ret;
+}
+
+static int i2c_write( char* buf, int count )
+{
+	int ret = -ENODEV;
+	trace("");
+	mutex_lock( &g_I2CLock );
+	if( g_Client ) {
+		ret = i2c_master_send( g_Client, buf, count );
+	}
+	mutex_unlock( &g_I2CLock );
+	return (count == ret) ? 0 : ret;
+}
 
 int adc_read_device(struct adc_config* cfg, struct adc_data* data)
 {
-	unsigned long flags;
-	trace("");
+	char buf[4];
+	int gain = (cfg->gain & 3);
+	int resolution = (cfg->resolution & 0xc);
+	int chan = (data->channel & 1);
 	data->value = 0;
-	spin_lock_irqsave( &g_I2CLock, flags );
-	//
-	spin_unlock_irqrestore( &g_I2CLock, flags );
-	return -EINVAL;
+	buf[0] = kNewConversion | gain | resolution | (chan << 5);
+	if( i2c_write( buf, 1 ) ) {
+		error("!write failed");
+		return -EIO;
+	}
+	udelay( adc_conversionTime( resolution ) );
+	if( i2c_read( buf, 4 ) ) {
+		error("!read failed");
+		return -EIO;
+	}
+	if( adc_decode( &data->value, buf ) )
+		return -EAGAIN;
+	return 0;
 }
 EXPORT_SYMBOL(adc_read_device);
 
 static int __devinit adc_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	trace("addr: 0x%x", client->addr);
-
-	if( !i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA | I2C_FUNC_SMBUS_WORD_DATA |
-			I2C_FUNC_SMBUS_I2C_BLOCK) ) {
+	if( !i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA) ) {
 		error( "not all functionality supported" );
 		return -ENODEV;
 	}
-	
 	return 0;
 }
 
@@ -70,19 +105,16 @@ int __init adc_i2c_init()
 	int busnum = 1;
 	struct i2c_adapter *adap;
 	struct i2c_client* client;
-	unsigned long flags;
-	
 	trace("");
-
 	adap = i2c_get_adapter(busnum);
 	if (!adap) {
 		error( "failed to get adapter i2c%d\n", busnum );
 		return -ENODEV;
 	}
 	client = i2c_new_device(adap, &adc_i2c_board_info);
-	spin_lock_irqsave( &g_I2CLock, flags );
+	mutex_lock( &g_I2CLock );
 	g_Client = client;
-	spin_unlock_irqrestore( &g_I2CLock, flags );
+	mutex_unlock( &g_I2CLock );
 	if( !client ) {
 		error( "failed to register %s to i2c%d\n", adc_i2c_board_info.type, busnum);
 	}
@@ -92,13 +124,12 @@ int __init adc_i2c_init()
 
 void __devexit adc_i2c_exit()
 {
-	unsigned long flags;
 	struct i2c_client* client;
 	trace("");
-	spin_lock_irqsave( &g_I2CLock, flags );
+	mutex_lock( &g_I2CLock );
 	client = g_Client;
 	g_Client = NULL;
-	spin_unlock_irqrestore( &g_I2CLock, flags );
+	mutex_unlock( &g_I2CLock );
 	if( client ) {
 		i2c_unregister_device( client );
 	}
