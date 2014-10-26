@@ -22,9 +22,10 @@ static int g_Major = 0;
 
 
 static DEFINE_SPINLOCK(g_Lock);
-static int g_Status = 0;
+//static int g_Status = 0;
 
 static struct pwm_config g_Config;
+static struct pwm_settings g_Settings;
 
 
 static int debug = 0;
@@ -32,37 +33,13 @@ module_param(debug, int, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
 
 
-int pwm_get_status(struct pwm_status* arg)
-{
-	unsigned long flags;
-	trace("");
-	spin_lock_irqsave( &g_Lock, flags );
-	arg->status = g_Status;
-	spin_unlock_irqrestore( &g_Lock, flags );
-	return 0;
-}
-EXPORT_SYMBOL(pwm_get_status);
-
-int pwm_set_status(struct pwm_status* arg)
-{
-	unsigned long flags;
-	trace("new value: %d", arg->status);
-	spin_lock_irqsave( &g_Lock, flags );
-	g_Status = arg->status;
-	spin_unlock_irqrestore( &g_Lock, flags );
-	return 0;
-}
-EXPORT_SYMBOL(pwm_set_status);
-
 int pwm_get_config(struct pwm_config* arg)
 {
 	unsigned long flags;
 	trace("");
 	spin_lock_irqsave( &g_Lock, flags );
-	arg->enabled = g_Config.enabled;
-	arg->period = g_Config.period;
-	arg->frequency = g_Config.frequency;
-	arg->duty_cycle = g_Config.duty_cycle;
+	arg->channel = g_Config.channel;
+	arg->pin = g_Config.pin;
 	spin_unlock_irqrestore( &g_Lock, flags );
 	return 0;
 }
@@ -71,15 +48,11 @@ EXPORT_SYMBOL(pwm_get_config);
 int pwm_set_config(struct pwm_config* arg)
 {
 	unsigned long flags;
-	trace("new enabled: %d", arg->enabled);
-	trace("new period: %d", arg->period);
-	trace("new frequency: %d", arg->frequency);
-	trace("new duty_cycle: %d", arg->duty_cycle);
+	trace("new channel: %d", arg->channel);
+	trace("new pin: %d", arg->pin);
 	spin_lock_irqsave( &g_Lock, flags );
-	g_Config.enabled = arg->enabled;
-	g_Config.period = arg->period;
-	g_Config.frequency = arg->frequency;
-	g_Config.duty_cycle = arg->duty_cycle;
+	g_Config.channel = arg->channel;
+	g_Config.pin = arg->pin;
 	spin_unlock_irqrestore( &g_Lock, flags );
 	return 0;
 }
@@ -87,16 +60,15 @@ EXPORT_SYMBOL(pwm_set_config);
 
 
 
-
 // file operations
 static long pwm_ioctl(struct file *file, unsigned int command, unsigned long arg)
 {
 	long ret = -EFAULT;
-	struct pwm_status status;
+	//struct pwm_status status;
 	struct pwm_config config;
 	trace("");
 	switch( command ) {
-		case PWM_SET_STATUS:
+/*		case PWM_SET_STATUS:
 			if( copy_from_user( &status, (void*)arg, sizeof(struct pwm_status) ) )
 				return -EFAULT;
 			ret = pwm_set_status( &status );
@@ -109,7 +81,7 @@ static long pwm_ioctl(struct file *file, unsigned int command, unsigned long arg
 			if( copy_to_user( (void*)arg, &status, sizeof(struct pwm_status) ) )
 				return -EFAULT;
 			break;
-		case PWM_SET_CONFIG:
+*/		case PWM_SET_CONFIG:
 			if( copy_from_user( &config, (void*)arg, sizeof(struct pwm_config) ) )
 				return -EFAULT;
 			ret = pwm_set_config( &config );
@@ -124,28 +96,22 @@ static long pwm_ioctl(struct file *file, unsigned int command, unsigned long arg
 			break;
 		//TEST
 		case PWM_GET_ENABLED:
-            return g_Config.enabled;
+            return g_Settings.enabled;
             break;		
 		case PWM_SET_ENABLED:
-            g_Config.enabled = arg;
-			break;		
-		case PWM_GET_PERIOD:
-            return g_Config.period;
-            break;		
-		case PWM_SET_PERIOD:
-            g_Config.period = arg;
+            g_Settings.enabled = arg;
 			break;		
 		case PWM_GET_FREQUENCY:
-            return g_Config.frequency;
+            return g_Settings.frequency;
             break;		
 		case PWM_SET_FREQUENCY:
-            g_Config.frequency = arg;
+            g_Settings.frequency = arg;
 			break;		
 		case PWM_GET_DUTY_CYCLE:
-            return g_Config.duty_cycle;
+            return g_Settings.duty_cycle;
             break;		
 		case PWM_SET_DUTY_CYCLE:
-            g_Config.duty_cycle = arg;
+            g_Settings.duty_cycle = arg;
 			break;		
 			
 			
@@ -213,10 +179,9 @@ static int __init pwm_init(void)
 	trace("");
 	
     //test
-	g_Config.enabled = false;	
-	g_Config.period = 99;
-	g_Config.frequency = 5000;
-	g_Config.duty_cycle = 50;
+	g_Settings.enabled = false;	
+	g_Settings.frequency = 5000;
+	g_Settings.duty_cycle = 50;
 	
         
 	g_Major = register_chrdev( PWM_MAJOR, DRV_NAME, &pwm_fops );
