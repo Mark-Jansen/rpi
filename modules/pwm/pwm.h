@@ -15,12 +15,21 @@ struct pwm_settings {
 #define PWM_SET_SETTINGS           _IOW(THERMIOC_MAGIC,  0, struct pwm_settings)
 #define PWM_GET_SETTINGS           _IOR(THERMIOC_MAGIC,  1, struct pwm_settings)
 
-#define PWM_SET_ENABLED            _IOW(THERMIOC_MAGIC,  2, int )
-#define PWM_GET_ENABLED            _IOR(THERMIOC_MAGIC,  3, int )
-#define PWM_SET_DUTY_CYCLE         _IOW(THERMIOC_MAGIC,  4, int )
-#define PWM_GET_DUTY_CYCLE		   _IOR(THERMIOC_MAGIC,  5, int )
-#define PWM_SET_FREQUENCY          _IOW(THERMIOC_MAGIC,  6, int )
-#define PWM_GET_FREQUENCY		   _IOR(THERMIOC_MAGIC,  7, int )				
+//channel 1 ioctls
+#define PWM_SET_ENABLED_CH1        _IOW(THERMIOC_MAGIC,  2, int )
+#define PWM_GET_ENABLED_CH1        _IOR(THERMIOC_MAGIC,  3, int )
+#define PWM_SET_DUTY_CYCLE_CH1     _IOW(THERMIOC_MAGIC,  4, int )
+#define PWM_GET_DUTY_CYCLE_CH1	   _IOR(THERMIOC_MAGIC,  5, int )
+#define PWM_SET_FREQUENCY_CH1      _IOW(THERMIOC_MAGIC,  6, int )
+#define PWM_GET_FREQUENCY_CH1	   _IOR(THERMIOC_MAGIC,  7, int )				
+
+//channel 2 ioctls
+#define PWM_SET_ENABLED_CH2        _IOW(THERMIOC_MAGIC,  8, int )
+#define PWM_GET_ENABLED_CH2        _IOR(THERMIOC_MAGIC,  9, int )
+#define PWM_SET_DUTY_CYCLE_CH2     _IOW(THERMIOC_MAGIC, 10, int )
+#define PWM_GET_DUTY_CYCLE_CH2	   _IOR(THERMIOC_MAGIC, 11, int )
+#define PWM_SET_FREQUENCY_CH2      _IOW(THERMIOC_MAGIC, 12, int )
+#define PWM_GET_FREQUENCY_CH2	   _IOR(THERMIOC_MAGIC, 13, int )				
 
 
 //exported symbols:
