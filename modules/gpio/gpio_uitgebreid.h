@@ -23,6 +23,26 @@ struct GpioRegisters
 	// input
 	uint32_t GPLEV[2];		// GPIO LEVEL:	Deze geeft de actuele waarden van de GPIO pin
 	uint32_t Reserved4;
+	// GPIO Pin Detect
+	uint32_t GPEDS[2];		// GPIO Pin Event Detect Status
+	uint32_t Reserved5;
+	uint32_t GPREN[2];		// GPIO Pin Rising Edge Detect Enable
+	uint32_t Reserved6;
+	uint32_t GPFEN[2];		// GPIO Pin Falling Edge Detect Enable
+	uint32_t Reserved7;
+	uint32_t GPHEN[2];		// GPIO Pin High Detect Enable
+	uint32_t Reserved8;
+	uint32_t GPLEN[2];		// GPIO Pin Low Detect Enable
+	uint32_t Reserved9;
+	uint32_t GPAREN[2];		// GPIO Pin Async. Rising Edge Detect
+	uint32_t Reserved10;
+	uint32_t GPAFEN[2];		// GPIO Pin Async. Falling Edge Detect
+	uint32_t Reserved11;
+	// Pull-up/down
+	uint32_t GPPUD;			// GPIO Pin Pull-up/down Enable
+	uint32_t GPPUDCLK[2];	// GPIO Pin Pull-up/down Enable Clock
+	uint32_t Reserved13;
+	uint32_t Test;
 };
 
 // 

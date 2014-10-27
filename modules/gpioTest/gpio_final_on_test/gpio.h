@@ -13,16 +13,16 @@ struct gpio_status {
 struct GpioRegisters
 {
 	// function select
-	uint32_t GPFSEL[6];		// GPIO SELECT:	Deze kun je gebruiken om een gekozen pin input of output te maken	// check datasheet
-	uint32_t Reserved1;
+	int GPFSEL[6];		// GPIO SELECT:	Deze kun je gebruiken om een gekozen pin input of output te maken	// check datasheet
+	int Reserved1;
 	// output
-	uint32_t GPSET[2];		// GPIO SET: 	Deze kun je gebruiken om de gekozen pin 1 te maken					// check datasheet
-	uint32_t Reserved2;
-	uint32_t GPCLR[2];		// GPIO CLEAR: 	Deze kun je gebruiken om de gekozen pin 0 te maken					// check datasheet
-	uint32_t Reserved3;
+	int GPSET[2];		// GPIO SET: 	Deze kun je gebruiken om de gekozen pin 1 te maken					// check datasheet
+	int Reserved2;
+	int GPCLR[2];		// GPIO CLEAR: 	Deze kun je gebruiken om de gekozen pin 0 te maken					// check datasheet
+	int Reserved3;
 	// input
-	uint32_t GPLEV[2];		// GPIO LEVEL:	Deze geeft de actuele waarden van de GPIO pin
-	uint32_t Reserved4;
+	int GPLEV[2];		// GPIO LEVEL:	Deze geeft de actuele waarden van de GPIO pin
+	int Reserved4;
 };
 
 // 
