@@ -11,10 +11,10 @@ struct adc_config {
 	int gain;
 };
 
-#define ADC_RESOLUTION_12b				0x0
-#define ADC_RESOLUTION_14b				0x4
-#define ADC_RESOLUTION_16b				0x8
-#define ADC_RESOLUTION_18b				0xc
+#define ADC_RESOLUTION_12B				0x0
+#define ADC_RESOLUTION_14B				0x4
+#define ADC_RESOLUTION_16B				0x8
+#define ADC_RESOLUTION_18B				0xc
 
 #define ADC_GAIN_1						0x0
 #define ADC_GAIN_2						0x1
@@ -33,5 +33,22 @@ int adc_read_device(struct adc_config* cfg, struct adc_data* data);
 int adc_get_config(struct adc_config* cfg);
 int adc_set_config(struct adc_config* cfg);
 //
+
+
+// constants
+#define ADC_VREF			2.048
+
+#define ADC_RES_12B_MIN		-2048
+#define ADC_RES_12B_MAX		2047
+
+#define ADC_RES_14B_MIN		-8192
+#define ADC_RES_14B_MAX		8191
+
+#define ADC_RES_16B_MIN		-32768
+#define ADC_RES_16B_MAX		32767
+
+#define ADC_RES_18B_MIN		-131072
+#define ADC_RES_18B_MAX		131071
+
 
 #endif // ADC_H

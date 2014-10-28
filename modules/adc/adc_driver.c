@@ -17,7 +17,7 @@ static struct device* g_Device = NULL;
 
 static DEFINE_SPINLOCK(g_Lock);
 static struct adc_config g_Config = {
-	.resolution = ADC_RESOLUTION_14b,
+	.resolution = ADC_RESOLUTION_14B,
 	.gain = ADC_GAIN_1
 };
 
