@@ -3,36 +3,49 @@
 
 #include <linux/ioctl.h>
 
+struct motor_driver_config{
+	int pinnr;
+	int direction_left_pinnr;
+	int direction_right_pinnr;
+};
 
-struct motor_driver_data {
-	
-	int pwm_pin;
+struct motor_driver_setting {
 	int pwm;
-	int direction_pin1;
-	int direction_pin2;
+	int direction_pinL;   // 0 or 1 to turn left or right
+	int direction_pinR;	  // 0 or 1 to turn left or right
 	
 };
 
-struct encoder_info {
-	int motor_speed;
-	int direction;
+struct motor_driver_encoder_data {
+	int speed;
+	int direction;      // 0 is left , 1 is right
 };
 
-#define THERMIOC_MAGIC			'M'
-#define MOTOR_SETSPEED			_IOW(THERMIOC_MAGIC, 0, struct motor_driver_data)
-#define MOTOR_GETSPEED			_IOR(THERMIOC_MAGIC, 1, encoder_info)
+#define THERMIOC_MAGIC				'M'
+#define MOTOR_DRIVER_SET_CONFIG 	_IOW(THERMIOC_MAGIC, 0, struct motor_driver_config)
+#define MOTOR_SETSPEED				_IOW(THERMIOC_MAGIC, 1, struct motor_driver_setting)
+#define MOTOR_GETSPEED				_IOR(THERMIOC_MAGIC, 2, motor_driver_encoder_data)
+
 
 // =================================================================================
-// void setSpeed(struct motor_driver_data* arg)
+// int motor_driver_config(struct motor_driver_config* arg)
 // Pre : 
-// Post: sets the speed of the motor
+// Post: sets pinnumbers for use in RPI
 // =================================================================================
+int motor_driver_config(struct motor_driver_config* arg)
 
 // =================================================================================
-// int getSpeed(struct encoder_info* arg)
+// int setSpeed(struct motor_driver_setting* arg)
 // Pre : 
-// Post: returns the speed of the motor
+// Post: sets the speed(pwm)and direction of the motor
 // =================================================================================
+int setSpeed(struct motor_driver_setting* arg)
 
+// =================================================================================
+// int getSpeed(struct motor_driver_encoder_data* arg)
+// Pre : 
+// Post: returns the speed and direction of the motor
+// =================================================================================
+int getSpeed(struct motor_driver_encoder_data* arg)
 
 #endif // MOTOR_DRIVER_H
