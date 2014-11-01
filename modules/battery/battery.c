@@ -47,11 +47,35 @@ int battery_get_charge(struct battery_charge* arg)
 }
 EXPORT_SYMBOL(battery_get_charge);
 
+int battery_get_config(struct battery_config* cfg)
+{
+	unsigned long flags;
+	trace("");
+	spin_lock_irqsave( &g_Lock, flags );
+	memcpy( cfg, &g_Config, sizeof(struct battery_config) );
+	spin_unlock_irqrestore( &g_Lock, flags );
+	return 0;
+}
+EXPORT_SYMBOL(battery_get_config);
+
+int battery_set_config(struct battery_config* cfg)
+{
+	unsigned long flags;
+	trace("");
+	spin_lock_irqsave( &g_Lock, flags );
+	memcpy( &g_Config, cfg, sizeof(struct battery_config) );
+	spin_unlock_irqrestore( &g_Lock, flags );
+	return 0;
+}
+EXPORT_SYMBOL(battery_set_config);
+
+
 // file operations
 static long battery_ioctl(struct file *file, unsigned int command, unsigned long arg)
 {
 	long ret = -EFAULT;
 	struct battery_charge charge;
+	struct battery_config config;
 	trace("");
 	switch( command ) {
 		case BATTERY_GET_CHARGE:
@@ -61,6 +85,19 @@ static long battery_ioctl(struct file *file, unsigned int command, unsigned long
 				return -ENXIO;
 			if( copy_to_user( (void*)arg, &charge, sizeof(struct battery_charge) ) )
 				return -EFAULT;
+			break;
+		case BATTERY_GET_CONFIG:
+			if( !battery_get_config( &config ) )
+				ret = 0;
+			else
+				return -ENXIO;
+			if( copy_to_user( (void*)arg, &config, sizeof(struct battery_config) ) )
+				return -EFAULT;
+			break;
+		case BATTERY_SET_CONFIG:
+			if( copy_from_user( &config, (void*)arg, sizeof(struct battery_config) ) )
+				return -EFAULT;
+			ret = battery_set_config( &config );
 			break;
 		default:
 			break;
