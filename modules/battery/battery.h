@@ -12,11 +12,11 @@ struct battery_config {
 	int sample_interval;	// the number of ms between samples
 };
 
-#define THERMIOC_MAGIC			'B'
-#define BATTERY_GET_CHARGE		_IOR(THERMIOC_MAGIC, 0, struct battery_charge)
+#define BATT_THERMIOC_MAGIC		'B'
+#define BATTERY_GET_CHARGE		_IOR(BATT_THERMIOC_MAGIC, 0, struct battery_charge)
 
-#define BATTERY_GET_CONFIG		_IOR(THERMIOC_MAGIC, 2, struct battery_config)
-#define BATTERY_SET_CONFIG		_IOW(THERMIOC_MAGIC, 3, struct battery_config)
+#define BATTERY_GET_CONFIG		_IOR(BATT_THERMIOC_MAGIC, 2, struct battery_config)
+#define BATTERY_SET_CONFIG		_IOW(BATT_THERMIOC_MAGIC, 3, struct battery_config)
 
 int battery_get_charge(struct battery_charge* arg);
 int battery_get_config(struct battery_config* cfg);

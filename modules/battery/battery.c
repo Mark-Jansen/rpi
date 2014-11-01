@@ -4,12 +4,14 @@
 #include <linux/platform_device.h>
 #include <linux/ioctl.h>
 #include <linux/uaccess.h>		//copy_[from/to]_user
+#include <linux/timer.h>
 
 #define DRV_NAME		"battery"
 #define DRV_REV			"r1"
 #define BATTERY_MAJOR	250
 
 #include "battery.h"
+#include "../adc/adc.h"
 
 #define trace(format, arg...) do { if( debug & 1 ) pr_info( DRV_NAME ": %s: " format "\n", __FUNCTION__, ## arg ); } while (0)
 #define info(format, arg...) pr_info( DRV_NAME ": " format "\n", ## arg )
@@ -28,11 +30,21 @@ static struct battery_config g_Config = {
 	.num_samples = 4,
 	.sample_interval = 60 * 1000
 };
-
+static struct timer_list g_Timer;
 
 static int debug = 0;
 module_param(debug, int, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
+
+static void reschedule(int msec)
+{
+	if( timer_pending( &g_Timer ) ) {
+		del_timer( &g_Timer );
+	}
+	if( msec ) {
+		mod_timer( &g_Timer, jiffies + msecs_to_jiffies(msec) );
+	}
+}
 
 
 int battery_get_charge(struct battery_charge* arg)
@@ -61,14 +73,37 @@ EXPORT_SYMBOL(battery_get_config);
 int battery_set_config(struct battery_config* cfg)
 {
 	unsigned long flags;
+	int timeout = 0;
 	trace("");
 	spin_lock_irqsave( &g_Lock, flags );
+	if( g_Config.sample_interval != cfg->sample_interval ) {
+		timeout = cfg->sample_interval;
+	}
 	memcpy( &g_Config, cfg, sizeof(struct battery_config) );
 	spin_unlock_irqrestore( &g_Lock, flags );
+	if( timeout ) {
+		reschedule( timeout );
+	}
 	return 0;
 }
 EXPORT_SYMBOL(battery_set_config);
 
+
+static void read_battery_fn(unsigned long arg)
+{
+	struct battery_config config;
+	struct battery_charge charge;
+	int i;
+	if( battery_get_config( &config ) )
+		return;
+	
+	memset( &charge, 0, sizeof(charge) );
+	for( i = 0; i < config.num_samples; ++i ) {
+		
+	}	
+	
+	reschedule( config.sample_interval );
+}
 
 // file operations
 static long battery_ioctl(struct file *file, unsigned int command, unsigned long arg)
@@ -155,6 +190,10 @@ static int __init battery_init(void)
 	ret = device_create_file( g_Device, &dev_attr_level );
 
 	info( DRV_REV " loaded, major: %d", g_Major );
+	
+	init_timer( &g_Timer );
+	g_Timer.function = read_battery_fn;
+	reschedule( 200 );		// schedule the first timer
 
 	goto out;
 
