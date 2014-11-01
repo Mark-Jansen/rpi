@@ -1,6 +1,6 @@
 
 # add each new target to 'TARGETS'
-TARGETS = example adc
+TARGETS = example adc battery
 PREFIX = $(shell echo `pwd`)/../build/modules/
 
 .PHONY: all clean
