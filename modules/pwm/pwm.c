@@ -17,17 +17,13 @@ static DEFINE_SPINLOCK(g_Lock);
 
 static struct pwm_settings g_Settings[NR_OF_CHANNELS];
 
+
 int debug = 0;
 module_param(debug, int, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
 
-int swpin = 0;
-module_param(swpin, int, S_IRUGO | S_IWUSR);
-MODULE_PARM_DESC(swpin, "set software pwm pin");
-
 
 /* start of software pwm code*/
-
 
 /****************************************************************************/
 /* Timer variables block                                                    */
@@ -42,16 +38,16 @@ enum hrtimer_restart cb1(struct hrtimer *t) {
 	now = hrtimer_cb_get_time(t);
 	ovr = hrtimer_forward(t, now, t1);
 
-	if (g_Settings[1].duty_cycle) {
-		gpio_set_value(g_Settings[1].pin, 1);
-		if (g_Settings[1].duty_cycle < 100) {
-			unsigned long t_ns = ((MICRO_SEC * 10 * g_Settings[1].duty_cycle) / (g_Settings[1].frequency));
+	if (g_Settings[CH1].duty_cycle && g_Settings[CH1].enabled) {
+		gpio_set_value(g_Settings[CH1].pin, 1);
+		if (g_Settings[CH1].duty_cycle <= MAX_DUTY_CYCLE) {
+			unsigned long t_ns = ((MICRO_SEC * 10 * g_Settings[CH1].duty_cycle) / (g_Settings[CH1].frequency));
 			ktime_t t2 = ktime_set( 0, t_ns );
 			hrtimer_start(&tm2, t2, HRTIMER_MODE_REL);
 		}
 	}
 	else {
-		gpio_set_value(g_Settings[1].pin, 0);
+		gpio_set_value(g_Settings[CH1].pin, 0);
 	}
 	return HRTIMER_RESTART;
 }
@@ -59,7 +55,7 @@ enum hrtimer_restart cb1(struct hrtimer *t) {
 
 enum hrtimer_restart cb2(struct hrtimer *t) {
 
-	gpio_set_value(g_Settings[1].pin, 0);
+	gpio_set_value(g_Settings[CH1].pin, 0);
 	return HRTIMER_NORESTART;
 }
 
@@ -130,56 +126,41 @@ static long pwm_ioctl(struct file *file, unsigned int command, unsigned long arg
 }
 
 
-static int pwm_open(struct inode *inode, struct file *file)
-{
-	trace("");
-	return 0;
-}
-
-static int pwm_release(struct inode *inode, struct file *file)
-{
-	trace("");
-	return 0;
-}
-
-
 static const struct file_operations pwm_fops = {
 	.owner				= THIS_MODULE,
-	.open				= pwm_open,
-	.release			= pwm_release,
 	.unlocked_ioctl		= pwm_ioctl,
 };
 
 
 //sysfs
 static ssize_t duty_cycle_store(struct device *dev,struct device_attribute *attr,const char *buf, size_t len) {
-	unsigned long dc = 0;
+	unsigned int dc = 0;
 	if (!kstrtouint(buf, 10, &dc)) {
-		dc = dc > 100 ? 100 : dc;
-		g_Settings[1].duty_cycle = dc;
+		dc = dc > MAX_DUTY_CYCLE ? MAX_DUTY_CYCLE : dc;
+		g_Settings[CH1].duty_cycle = dc;
 		trace("duty set to %d\n",dc);
-		trace("global duty set to %d\n",g_Settings[1].duty_cycle);
+		trace("global duty set to %d\n",g_Settings[CH1].duty_cycle);
 	}
 	return len;
 }
 static ssize_t duty_cycle_show(struct device *dev,struct device_attribute *attr, char *buf) {
 
-	return sprintf(buf, "%d", g_Settings[1].duty_cycle);
+	return sprintf(buf, "%d", g_Settings[CH1].duty_cycle);
 }
 
 static ssize_t frequency_store(struct device *dev,struct device_attribute *attr,const char *buf, size_t len) {
-	unsigned long fr = 0;
+	unsigned int fr = 0;
 	if (!kstrtouint(buf, 10, &fr)) {
-		fr = fr > 100000 ? 100000 : fr;
-		g_Settings[1].frequency = fr;
+		fr = fr > MAX_FREQUENCY ? MAX_FREQUENCY : fr;
+		g_Settings[CH1].frequency = fr;
 		trace("frequency set to %d\n",fr);
-		trace("global frequency set to %d\n",g_Settings[1].frequency);
+		trace("global frequency set to %d\n",g_Settings[CH1].frequency);
 	}
 	return len;
 }
 static ssize_t frequency_show(struct device *dev,struct device_attribute *attr, char *buf) {
 
-	return sprintf(buf, "%d", g_Settings[1].frequency);
+	return sprintf(buf, "%d", g_Settings[CH1].frequency);
 }
 
 
@@ -219,19 +200,19 @@ static DEVICE_ATTR( frequency, S_IWUSR | S_IRUGO, frequency_show, frequency_stor
 
 static void software_pwm_init(void)
 {
+  unsigned long t_ns;
+  g_Settings[CH1].pin = DEFAULT_GPIO_OUTPUT; //TODO
+  g_Settings[CH1].frequency = DEFAULT_FREQ;
+  g_Settings[CH1].duty_cycle = 0;
   
-  g_Settings[1].pin = DEFAULT_GPIO_OUTPUT; //TODO
-  g_Settings[1].frequency = DEFAULT_FREQ;
-  g_Settings[1].duty_cycle = 0;
-  
-  unsigned long t_ns = (NANO_SEC)/DEFAULT_FREQ;
+  t_ns = (NANO_SEC)/DEFAULT_FREQ;
   hrtimer_init(&tm1, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
   hrtimer_init(&tm2, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
   t1 = ktime_set( 0, t_ns );
   tm1.function = &cb1;
   tm2.function = &cb2;
-  gpio_request(g_Settings[1].pin, "soft_pwm_gpio");
-  gpio_direction_output(g_Settings[1].pin, 1);
+  gpio_request(g_Settings[CH1].pin, "soft_pwm_gpio");
+  gpio_direction_output(g_Settings[CH1].pin, 1);
   hrtimer_start(&tm1, t1, HRTIMER_MODE_REL);
 }
 
@@ -245,7 +226,7 @@ static void software_pwm_exit(void)
   {
     hrtimer_cancel(&tm2);
   }
-  gpio_free(g_Settings[1].pin);
+  gpio_free(g_Settings[CH1].pin);
 }
 
 static int __init pwm_init(void)
@@ -275,7 +256,7 @@ static int __init pwm_init(void)
 		goto out_device;
 	}
 	
-	ret = device_create_file( g_Device, &dev_attr_pwm0 );
+	ret  = device_create_file( g_Device, &dev_attr_pwm0 );
     ret |= device_create_file( g_Device, &dev_attr_pwm1 );
 	ret |= device_create_file( g_Device, &dev_attr_duty_cycle );
 	ret |= device_create_file( g_Device, &dev_attr_frequency );

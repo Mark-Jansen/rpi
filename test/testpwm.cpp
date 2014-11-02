@@ -110,7 +110,7 @@ int main()
 	write(fd,&pwm1);
 	usleep(1000000);
 
-	pwm1.duty_cycle = 99;
+	pwm1.duty_cycle = 100;
 	write(fd,&pwm1);
 	usleep(1000000);
 
