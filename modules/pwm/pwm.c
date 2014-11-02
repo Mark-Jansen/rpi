@@ -1,9 +1,10 @@
-
 #include <linux/fs.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/ioctl.h>
 #include <linux/uaccess.h>		//copy_[from/to]_user
+#include <linux/gpio.h> //TODO
+#include <linux/hrtimer.h> //TODO
 
 #include "pwm.h"
 #include "pwm_internal.h"
@@ -12,21 +13,64 @@ static int g_Major = 0;
 static struct class* g_Class = NULL;
 static struct device* g_Device = NULL;
 
-
 static DEFINE_SPINLOCK(g_Lock);
 
 static struct pwm_settings g_Settings[NR_OF_CHANNELS];
-
 
 int debug = 0;
 module_param(debug, int, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
 
+int swpin = 0;
+module_param(swpin, int, S_IRUGO | S_IWUSR);
+MODULE_PARM_DESC(swpin, "set software pwm pin");
+
+
+/* start of software pwm code*/
+
+
+/****************************************************************************/
+/* Timer variables block                                                    */
+/****************************************************************************/
+struct hrtimer tm1, tm2;
+static ktime_t t1;
+
+
+enum hrtimer_restart cb1(struct hrtimer *t) {
+	ktime_t now;
+	int ovr;
+	now = hrtimer_cb_get_time(t);
+	ovr = hrtimer_forward(t, now, t1);
+
+	if (g_Settings[1].duty_cycle) {
+		gpio_set_value(g_Settings[1].pin, 1);
+		if (g_Settings[1].duty_cycle < 100) {
+			unsigned long t_ns = ((MICRO_SEC * 10 * g_Settings[1].duty_cycle) / (g_Settings[1].frequency));
+			ktime_t t2 = ktime_set( 0, t_ns );
+			hrtimer_start(&tm2, t2, HRTIMER_MODE_REL);
+		}
+	}
+	else {
+		gpio_set_value(g_Settings[1].pin, 0);
+	}
+	return HRTIMER_RESTART;
+}
+
+
+enum hrtimer_restart cb2(struct hrtimer *t) {
+
+	gpio_set_value(g_Settings[1].pin, 0);
+	return HRTIMER_NORESTART;
+}
+
+/* end of software pwm code */
+
+
 
 int pwm_get_settings(struct pwm_settings* arg)
 {
 	unsigned long flags;
-	trace("");
+	trace("channel = %d",arg->channel);
 	spin_lock_irqsave( &g_Lock, flags );
 	arg->channel    = g_Settings[arg->channel].channel;
 	arg->pin        = g_Settings[arg->channel].pin;
@@ -79,25 +123,6 @@ static long pwm_ioctl(struct file *file, unsigned int command, unsigned long arg
 			if( copy_to_user( (void*)arg, &settings, sizeof(struct pwm_settings) ) )
 				return -EFAULT;
 			break;
-     	//TEST
-		case PWM_GET_ENABLED:
-            //return g_Settings.enabled;
-            break;		
-		case PWM_SET_ENABLED:
-            //g_Settings.enabled = arg;
-			break;		
-		case PWM_GET_FREQUENCY:
-            //return g_Settings.frequency;
-            break;		
-		case PWM_SET_FREQUENCY:
-            //g_Settings.frequency = arg;
-			break;		
-		case PWM_GET_DUTY_CYCLE:
-            //return g_Settings.duty_cycle;
-            break;		
-		case PWM_SET_DUTY_CYCLE:
-            //g_Settings.duty_cycle = arg;
-			break;		
 		default:
 			return ENOTTY;
 	}
@@ -126,11 +151,42 @@ static const struct file_operations pwm_fops = {
 };
 
 
+//sysfs
+static ssize_t duty_cycle_store(struct device *dev,struct device_attribute *attr,const char *buf, size_t len) {
+	unsigned long dc = 0;
+	if (!kstrtouint(buf, 10, &dc)) {
+		dc = dc > 100 ? 100 : dc;
+		g_Settings[1].duty_cycle = dc;
+		trace("duty set to %d\n",dc);
+		trace("global duty set to %d\n",g_Settings[1].duty_cycle);
+	}
+	return len;
+}
+static ssize_t duty_cycle_show(struct device *dev,struct device_attribute *attr, char *buf) {
+
+	return sprintf(buf, "%d", g_Settings[1].duty_cycle);
+}
+
+static ssize_t frequency_store(struct device *dev,struct device_attribute *attr,const char *buf, size_t len) {
+	unsigned long fr = 0;
+	if (!kstrtouint(buf, 10, &fr)) {
+		fr = fr > 100000 ? 100000 : fr;
+		g_Settings[1].frequency = fr;
+		trace("frequency set to %d\n",fr);
+		trace("global frequency set to %d\n",g_Settings[1].frequency);
+	}
+	return len;
+}
+static ssize_t frequency_show(struct device *dev,struct device_attribute *attr, char *buf) {
+
+	return sprintf(buf, "%d", g_Settings[1].frequency);
+}
+
 
 static ssize_t show_pwmx(struct device *dev, struct device_attribute *attr, char *buf, int chan)
 {
 	struct pwm_settings s;
-	trace("");
+	trace("show pwmx channel is: %d\n",chan );
 	s.channel = chan;
 	if( pwm_get_settings( &s ) ) 
 	    return snprintf( buf, PAGE_SIZE, "Failed to read the data\n" );
@@ -157,13 +213,46 @@ static ssize_t show_pwm1(struct device *dev, struct device_attribute *attr, char
 
 static DEVICE_ATTR( pwm0, S_IWUSR | S_IRUGO, show_pwm0, NULL );
 static DEVICE_ATTR( pwm1, S_IWUSR | S_IRUGO, show_pwm1, NULL );
+static DEVICE_ATTR( duty_cycle, S_IWUSR | S_IRUGO, duty_cycle_show, duty_cycle_store );
+static DEVICE_ATTR( frequency, S_IWUSR | S_IRUGO, frequency_show, frequency_store );
 
+
+static void software_pwm_init(void)
+{
+  
+  g_Settings[1].pin = DEFAULT_GPIO_OUTPUT; //TODO
+  g_Settings[1].frequency = DEFAULT_FREQ;
+  g_Settings[1].duty_cycle = 0;
+  
+  unsigned long t_ns = (NANO_SEC)/DEFAULT_FREQ;
+  hrtimer_init(&tm1, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+  hrtimer_init(&tm2, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+  t1 = ktime_set( 0, t_ns );
+  tm1.function = &cb1;
+  tm2.function = &cb2;
+  gpio_request(g_Settings[1].pin, "soft_pwm_gpio");
+  gpio_direction_output(g_Settings[1].pin, 1);
+  hrtimer_start(&tm1, t1, HRTIMER_MODE_REL);
+}
+
+static void software_pwm_exit(void)
+{
+  if (hrtimer_active(&tm1) || hrtimer_is_queued(&tm1)) 
+  {
+    hrtimer_cancel(&tm1);
+  }
+  if (hrtimer_active(&tm2) || hrtimer_is_queued(&tm2)) 
+  {
+    hrtimer_cancel(&tm2);
+  }
+  gpio_free(g_Settings[1].pin);
+}
 
 static int __init pwm_init(void)
 {
 	int ret = -1;
-	trace("");
-        
+	trace("");    
+
 	g_Major = register_chrdev( PWM_MAJOR, DRV_NAME, &pwm_fops );
 	if( g_Major < 0 ) {
 		error( "could not register device: %d", g_Major );
@@ -188,9 +277,12 @@ static int __init pwm_init(void)
 	
 	ret = device_create_file( g_Device, &dev_attr_pwm0 );
     ret |= device_create_file( g_Device, &dev_attr_pwm1 );
-	
+	ret |= device_create_file( g_Device, &dev_attr_duty_cycle );
+	ret |= device_create_file( g_Device, &dev_attr_frequency );
 	info( DRV_REV " loaded, major: %d", g_Major );
-
+    
+	software_pwm_init(); //TODO
+	
 	goto out;
 
 out_device:
@@ -200,7 +292,6 @@ out_chrdev:
 	unregister_chrdev(g_Major, DRV_NAME);
 
 out:
-
 	return ret;
 }
 
@@ -210,11 +301,14 @@ static void __exit pwm_exit(void)
 	
 	device_remove_file( g_Device, &dev_attr_pwm0 );
 	device_remove_file( g_Device, &dev_attr_pwm1 );
+	device_remove_file( g_Device, &dev_attr_duty_cycle );
+	device_remove_file( g_Device, &dev_attr_frequency );
 	device_destroy( g_Class, MKDEV(g_Major, 0) );
 	class_unregister( g_Class );
 	class_destroy( g_Class );
 	unregister_chrdev( g_Major, DRV_NAME );
-
+    
+	software_pwm_exit(); //TODO
 	info("unloaded.");
 }
 
