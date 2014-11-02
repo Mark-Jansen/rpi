@@ -12,7 +12,7 @@ int main()
 	gpio_status status;
 	status.pinNr = 18;
 	status.value = 1;
-	status.function = 0;
+	status.function = OUTPUT;
 	
 	int fd = open("/dev/gpio", O_RDWR);
 	if (fd == -1) {
@@ -20,14 +20,14 @@ int main()
 		return 1;
 	}
 
-	if( ioctl(fd, GPIO_SET_CONFIG, status ) == -1) 
+	if( ioctl(fd, GPIO_SET_CONFIG, &status ) == -1) 
 	{
 		perror( "ioctl set" );
 		close( fd );
 		return -1;
 	}
 	
-	if( ioctl(fd, GPIO_WRITE, status ) == -1) 
+	if( ioctl(fd, GPIO_WRITE, &status ) == -1) 
 	{
 		perror( "ioctl set" );
 		close( fd );

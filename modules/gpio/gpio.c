@@ -31,19 +31,9 @@ MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
 
 int gpio_set_config(struct gpio_status* arg)
 {	
-	int mask;
 	int registerIndex;
 	int oldRegister;
 	
-	// check for the right function
-	if (arg->function == 1)
-	{
-		mask = OUTPUT << arg->pinNr;								// mask voor het wijzigen van de juiste bits
-	}
-	else
-	{
-		mask = INPUT << arg->pinNr;									// mask voor het wijzigen van de juiste bits
-	}
 	// check for the right register.
 	registerIndex = arg->pinNr / 10;
 	// check old register settings
@@ -52,12 +42,14 @@ int gpio_set_config(struct gpio_status* arg)
 	int bit = (arg->pinNr % 10) * 3	;							// juist pin ivm 3 bits per pin voor functie
 	int mask1 = 0b111 << bit;									// mask voor 3 bits van het juiste pinNr
 	int mask2 = oldRegister & ~mask1;							// forceer de 3 bits van gekozen pinNr op 0
-	int mask3 = arg->value << bit;								// mask voor het setten van de juiste waarde op pin nr
+	int mask3 = (arg->value << bit) & mask1;					// mask voor het setten van de juiste waarde op pin nr
 	gpioRegister->GPFSEL[registerIndex] = mask2 | mask3;		// geef gekozen pinNr juist waarde	
 
-	printk(KERN_INFO "Set function wiht GPFSEL. Register: %i\n", registerIndex);
-	printk(KERN_INFO "value = %i\n", gpioRegister->GPFSEL);	
-
+//	printk(KERN_INFO "Set function wiht GPFSEL. Register: %i\n", registerIndex);
+//	printk(KERN_INFO "value = %i\n", gpioRegister->GPFSEL[registerIndex]);	
+	int registerTest;
+	registerTest = gpioRegister->GPFSEL[registerIndex];
+	
 	return 0;
 }
 EXPORT_SYMBOL(gpio_set_config);
@@ -68,21 +60,22 @@ int gpio_read(struct gpio_status* arg)
 	int inputvalue = arg->value;
 	int gplevregister;
 	int mask;
+	int gplevValue;
 	
 	// check right register
 	if ((gpioPin > 0) && (gpioPin < 54))	// GPIO Pin is available
 	{
 		if (gpioPin < 32)	// GPIO is at register 0
 		{
-			gplevregister = gpioRegister->GPLEV[0];
+			gplevregister = 0;
 		}
 		else
 		{
-			gplevregister = gpioRegister->GPLEV[1];
+			gplevregister = 1;
 		}
-		mask = 1 << gpioPin;		
-		inputvalue = gplevregister & mask;
-		return inputvalue;
+		mask = 1 << gpioPin;	
+		gplevValue = gpioRegister->GPLEV[gplevregister];
+		arg->value = (gplevValue & mask) >> gpioPin;
 	}
 	else
 	{
@@ -97,21 +90,24 @@ int gpio_write(struct gpio_status* arg)
 {
 	int gpioPin = arg->pinNr;
 	int outputvalue = arg->value;
-	int gpsetregister;
+	int registerNr;
 	int mask;
+	int pinmask;
+	
+//	printk(KERN_INFO "In function gpio_write. Value = %i \n", outputvalue);
 	
 	// check right register
 	if ((gpioPin > 0) && (gpioPin < 54))	// GPIO Pin is available
 	{
 		if (gpioPin < 32)	// GPIO is at register 0
 		{
-			gpsetregister = 0;
-			printk(KERN_INFO "gpset register 0 \n");
+			registerNr = 0;
+//			printk(KERN_INFO "gpset register 0 \n");
 		}
 		else
 		{
-			gpsetregister = 1;
-			printk(KERN_INFO "gpset register 1 \n");
+			registerNr = 1;
+//			printk(KERN_INFO "gpset register 1 \n");
 			gpioPin = gpioPin - 32;		// start van volgende register
 		}
 	}
@@ -119,23 +115,26 @@ int gpio_write(struct gpio_status* arg)
 	{
 		printk(KERN_INFO "PinNr not available. \n");
 	}
-	
+	// registerNr = gpioPin / 32;	// ipv if else hierboven
 	// set outputvalue at right register
 	mask = 1 << gpioPin;
 	if (outputvalue)	// for set to 1 use GPSET
 	{	
-		int oldGPSETvalue = gpioRegister->GPSET[gpsetregister];	
-		gpioRegister->GPSET[gpsetregister] = oldGPSETvalue | mask;
-		printk(KERN_INFO "write 1 with GPSET \n");
-		printk(KERN_INFO "value = %i\n", gpioRegister->GPSET);
+		int oldGPSETvalue = gpioRegister->GPSET[registerNr];	
+		gpioRegister->GPSET[registerNr] = oldGPSETvalue | mask;
+//		printk(KERN_INFO "write 1 with GPSET. Value = %i \n", outputvalue);
+//		printk(KERN_INFO "value = %i\n", gpioRegister->GPSET);
 	}
 	else				// for set to 0 use GPCLR
 	{
-		int oldGPCLRvalue = gpioRegister->GPCLR[gpsetregister];
-		gpioRegister->GPSET[gpsetregister] = oldGPCLRvalue | mask;
-		printk(KERN_INFO "write 0 with GPCLR \n");
+		int oldGPCLRvalue = gpioRegister->GPCLR[registerNr];
+		gpioRegister->GPCLR[registerNr] = oldGPCLRvalue | mask;
+//		printk(KERN_INFO "write 0 with GPCLR \n");
 	}
-
+	int	GPFSELregister = gpioRegister->GPFSEL[1];
+	int gpfselmask = 0b111 << 24;
+	int test = GPFSELregister & gpfselmask;
+//	printk(KERN_INFO "gpfselregister for output pin = %i\n", test);
 	return 0;
 }
 EXPORT_SYMBOL(gpio_write);
@@ -144,34 +143,26 @@ EXPORT_SYMBOL(gpio_write);
 static long gpio_ioctl(struct file *file, unsigned int command, unsigned long arg)
 {
 	long ret = -EFAULT;
-/*	struct gpio_status status;
-	status.pinNr = arg->pinNr;
-	status.value = arg->value;
-	status.function = arg->function;
-*/  struct gpio_status status;
-	status.pinNr = 18;
-	status.value = 1;
-	status.function = 0;
+	struct gpio_status status;
   
 	trace("");
 	
-	switch( command ) {
-		case GPIO_READ:
-//			if( copy_from_user( &status, (void*)arg, sizeof(struct gpio_status) ) )
-//				return -EFAULT;
-			ret = gpio_read( &status );
-			break;
+	switch( command ) {		
 		case GPIO_WRITE:
-			if( !gpio_write( &status ) )
-				ret = 0;
-			else
-				return -ENXIO;
-//			if( copy_to_user( (void*)arg, &status, sizeof(struct gpio_status) ) )
-//				return -EFAULT;
+			if( copy_from_user( &status, (void*)arg, sizeof(struct gpio_status) ) )
+				return -EFAULT;
+			ret = gpio_write( &status );
+			break;
+		case GPIO_READ:
+			if( copy_from_user( &status, (void*)arg, sizeof(struct gpio_status) ) )
+				return -EFAULT;
+			ret = gpio_read( &status );
+			if( copy_to_user( (void*)arg, &status, sizeof(struct gpio_status) ) )
+				return -EFAULT;
 			break;
 		case GPIO_SET_CONFIG:
-//			if( copy_from_user( &status, (void*)arg, sizeof(struct gpio_status) ) )
-//				return -EFAULT;
+			if( copy_from_user( &status, (void*)arg, sizeof(struct gpio_status) ) )
+				return -EFAULT;
 			ret = gpio_set_config( &status );
 			break;
 		default:
@@ -197,8 +188,8 @@ static const struct file_operations fops = {
 	.open				= gpio_open,
 	.release			= gpio_release,
 	.unlocked_ioctl		= gpio_ioctl,
-//	.read				= gpio_read,
-//	.write				= gpio_write,
+	.read				= gpio_read,
+	.write				= gpio_write,
 };
 
 

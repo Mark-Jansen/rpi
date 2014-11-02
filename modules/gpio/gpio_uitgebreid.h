@@ -6,6 +6,9 @@ struct gpio_status {
 	int pinNr;		// Nummer van GPIO pin
 	int value;		// voor input de actuele waarde van de GPIOpin. Voor output de waarde die je naar de GPIOpin wilt sturen
 	int function;	// input = 1, output = 0, zie defines
+	
+	int pud;			// use defines
+	int eventDetect;	// use defines
 };
 
 // registers die goed gezet moeten worden aan de hand van de datasheet
@@ -45,9 +48,22 @@ struct GpioRegisters
 	uint32_t Test;
 };
 
-// 
+// input/output
 #define		OUTPUT				0b001		// check datasheet
 #define 	INPUT				0b000		// check datasheet
+
+// detect event
+#define  	NO_DETECT			0
+#define  	RISING_EDGE_DETECT	1
+#define  	FALLING_EDGE_DETECT	2
+#define  	LOW_DETECT 			3
+#define  	HIGH_DETECT			4
+
+// pull up/down
+#define  	PULL_OFF			0
+#define  	PULL_DOWN			1
+#define  	PULL_UP				
+
 
 #define THERMIOC_MAGIC			'G'
 
