@@ -38,6 +38,7 @@ MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
 
 static void reschedule(int msec)
 {
+	trace("");
 	if( timer_pending( &g_Timer ) ) {
 		del_timer( &g_Timer );
 	}
@@ -52,8 +53,7 @@ int battery_get_charge(struct battery_charge* arg)
 	unsigned long flags;
 	trace("");
 	spin_lock_irqsave( &g_Lock, flags );
-	arg->level1 = g_Charge.level1;
-	arg->level2 = g_Charge.level2;
+	memcpy( arg, &g_Charge, sizeof( *arg ) );
 	spin_unlock_irqrestore( &g_Lock, flags );
 	return 0;
 }
@@ -64,7 +64,7 @@ int battery_get_config(struct battery_config* cfg)
 	unsigned long flags;
 	trace("");
 	spin_lock_irqsave( &g_Lock, flags );
-	memcpy( cfg, &g_Config, sizeof(struct battery_config) );
+	memcpy( cfg, &g_Config, sizeof( *cfg ) );
 	spin_unlock_irqrestore( &g_Lock, flags );
 	return 0;
 }
@@ -79,7 +79,7 @@ int battery_set_config(struct battery_config* cfg)
 	if( g_Config.sample_interval != cfg->sample_interval ) {
 		timeout = cfg->sample_interval;
 	}
-	memcpy( &g_Config, cfg, sizeof(struct battery_config) );
+	memcpy( &g_Config, cfg, sizeof( g_Config ) );
 	spin_unlock_irqrestore( &g_Lock, flags );
 	if( timeout ) {
 		reschedule( timeout );
@@ -89,19 +89,77 @@ int battery_set_config(struct battery_config* cfg)
 EXPORT_SYMBOL(battery_set_config);
 
 
+static int read_adc(int channel, int resolution, int* value)
+{
+	struct adc_config cfg = {
+		.resolution = resolution,
+		.gain = 0
+	};
+	struct adc_data data = {
+		.channel = channel
+	};
+	trace("");
+	data.channel = channel;
+	if( adc_read_device( &cfg, &data ) )
+		return -EIO;
+	*value = data.value;
+	return 0;
+}
+
+static void scale( int resolution, int* values )
+{
+	int scalar;
+	switch( resolution )
+	{
+	case ADC_RESOLUTION_12B:
+		scalar = ADC_RES_12B_MAX;
+		break;
+	case ADC_RESOLUTION_14B:
+		scalar = ADC_RES_14B_MAX;
+		break;
+	case ADC_RESOLUTION_16B:
+		scalar = ADC_RES_16B_MAX;
+		break;
+	case ADC_RESOLUTION_18B:
+		scalar = ADC_RES_18B_MAX;
+		break;
+	default:
+		return;		// should not happen
+	}
+	values[0] = values[0] * 100 / scalar;
+	values[1] = values[1] * 100 / scalar;
+}
+
 static void read_battery_fn(unsigned long arg)
 {
 	struct battery_config config;
 	struct battery_charge charge;
-	int i;
+	int i, chan, total[2], tmp;
+	unsigned long flags;
+	trace("");
 	if( battery_get_config( &config ) )
 		return;
 	
 	memset( &charge, 0, sizeof(charge) );
+	total[0] = total[1] = 0;
 	for( i = 0; i < config.num_samples; ++i ) {
-		
+		for( chan = 0; chan < 2; ++chan ) {
+			if( read_adc( chan, config.resolution, &tmp ) )
+				goto out_reschedule;
+			total[chan] += tmp;
+			if( i > 0 )
+				total[chan] /= 2;
+		}
 	}	
 	
+	scale( config.resolution, total );
+
+	spin_lock_irqsave( &g_Lock, flags );
+	g_Charge.level1 = total[0];
+	g_Charge.level2 = total[1];
+	spin_unlock_irqrestore( &g_Lock, flags );
+
+out_reschedule:
 	reschedule( config.sample_interval );
 }
 
