@@ -47,7 +47,7 @@ int adc_read_device(struct adc_config* cfg, struct adc_data* data)
 	int gain = (cfg->gain & 3);
 	int resolution = (cfg->resolution & 0xc);
 	int chan = (data->channel & 1);
-	trace("0x%x, 0x%x", cfg, data);
+	trace("");
 	data->value = 0;
 	buf[0] = kNewConversion | gain | resolution | (chan << 5);
 	if( i2c_write( buf, 1 ) ) {

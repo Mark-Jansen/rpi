@@ -31,6 +31,10 @@ static struct battery_config g_Config = {
 	.sample_interval = 60 * 1000
 };
 static struct timer_list g_Timer;
+// we cannot use adc (i2c) from a timer, so we have to use a workqueue
+static struct workqueue_struct* g_Workqueue;
+static struct work_struct g_Work;
+
 
 static int debug = 0;
 module_param(debug, int, S_IRUGO | S_IWUSR);
@@ -38,7 +42,7 @@ MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
 
 static void reschedule(int msec)
 {
-	trace("");
+	trace( "in %d msec", msec );
 	if( timer_pending( &g_Timer ) ) {
 		del_timer( &g_Timer );
 	}
@@ -98,7 +102,7 @@ static int read_adc(int channel, int resolution, int* value)
 	struct adc_data data = {
 		.channel = channel
 	};
-	trace("");
+	trace("channel: %d", channel);
 	data.channel = channel;
 	if( adc_read_device( &cfg, &data ) )
 		return -EIO;
@@ -109,6 +113,7 @@ static int read_adc(int channel, int resolution, int* value)
 static void scale( int resolution, int* values )
 {
 	int scalar;
+	trace("res: 0x%x", resolution);
 	switch( resolution )
 	{
 	case ADC_RESOLUTION_12B:
@@ -130,7 +135,7 @@ static void scale( int resolution, int* values )
 	values[1] = values[1] * 100 / scalar;
 }
 
-static void read_battery_fn(unsigned long arg)
+static void read_battery_work(struct work_struct *work)
 {
 	struct battery_config config;
 	struct battery_charge charge;
@@ -153,6 +158,7 @@ static void read_battery_fn(unsigned long arg)
 	}	
 	
 	scale( config.resolution, total );
+	trace("charge %d%%, %d%%", total[0], total[1]);
 
 	spin_lock_irqsave( &g_Lock, flags );
 	g_Charge.level1 = total[0];
@@ -161,6 +167,12 @@ static void read_battery_fn(unsigned long arg)
 
 out_reschedule:
 	reschedule( config.sample_interval );
+}
+
+static void read_battery_fn(unsigned long arg)
+{
+	trace("");
+	queue_work( g_Workqueue, &g_Work );
 }
 
 // file operations
@@ -239,22 +251,36 @@ static int __init battery_init(void)
 	}
 	
 	g_Device = device_create( g_Class, NULL, MKDEV(g_Major, 0), NULL, DRV_NAME );
-	if( IS_ERR(g_Class) ) {
-		error( "could not create %s", DRV_NAME );
+	if( IS_ERR(g_Device) ) {
+		error( "could not create device %s", DRV_NAME );
 		ret = PTR_ERR( g_Device );
 		goto out_device;
 	}
-	
 	ret = device_create_file( g_Device, &dev_attr_level );
+	if( ret ) {
+		error( "could not create file" );
+		goto out_file;
+	}
+	g_Workqueue = create_singlethread_workqueue( "battery_workqueue" );
+	if( g_Workqueue == NULL ) {
+		error( "could not create workqueue" );
+		ret = -1;
+		goto out_workqueue;
+	}
+	INIT_WORK( &g_Work, read_battery_work );
 
-	info( DRV_REV " loaded, major: %d", g_Major );
-	
 	init_timer( &g_Timer );
 	g_Timer.function = read_battery_fn;
+
+	info( DRV_REV " loaded, major: %d", g_Major );
 	reschedule( 200 );		// schedule the first timer
 
 	goto out;
 
+out_workqueue:
+	device_remove_file( g_Device, &dev_attr_level );
+out_file:
+	device_destroy( g_Class, MKDEV(g_Major, 0) );
 out_device:
 	class_unregister( g_Class );
 	class_destroy( g_Class );
@@ -267,8 +293,10 @@ out:
 static void __exit battery_exit(void)
 {
 	trace("");
-	
+
 	reschedule( 0 );		// make sure we kill the timer :)
+	flush_workqueue( g_Workqueue );
+	destroy_workqueue( g_Workqueue );
 	device_remove_file( g_Device, &dev_attr_level );
 	device_destroy( g_Class, MKDEV(g_Major, 0) );
 	class_unregister( g_Class );
