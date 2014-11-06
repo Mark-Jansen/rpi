@@ -210,6 +210,7 @@ static void __exit battery_exit(void)
 {
 	trace("");
 	
+	reschedule( 0 );		// make sure we kill the timer :)
 	device_remove_file( g_Device, &dev_attr_level );
 	device_destroy( g_Class, MKDEV(g_Major, 0) );
 	class_unregister( g_Class );
