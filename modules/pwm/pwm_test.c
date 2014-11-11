@@ -15,7 +15,7 @@ static void new_settings(void)
 	pwm1.channel    = 1;
 	pwm1.pin        = 17;
 	pwm1.enabled    = 1;
-	pwm1.frequency  = 20000;
+	pwm1.frequency  = 25000;
 	pwm1.duty_cycle = 0;
 
 	pwm0.duty_cycle = 0;

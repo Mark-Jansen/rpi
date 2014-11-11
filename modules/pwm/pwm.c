@@ -26,10 +26,10 @@ struct ClockRegisters  *s_ClockRegisters;
 
 //relocate and cleanup this code
 static const int pwmPin = 18;
-double frequency        = 1000.0; // PWM frequency
-double dutyCycle        = 50.0;   // PWM duty Cycle (%)
+double frequency        = 25000.0; // PWM frequency
+double dutyCycle        = 0;  // PWM duty Cycle (%)
 unsigned int counts     = 256;    // PWM resolution
-unsigned int divisor    = 75;     // divisor value
+unsigned int divisor    = 3;     // divisor value
 int mode = PWMMODE;               // PWM mode
 /* end of hardware pwm */
 

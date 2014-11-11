@@ -18,7 +18,7 @@
 #define DEFAULT_GPIO_OUTPUT          17
 #define MICRO_SEC               1000000
 #define NANO_SEC       (MICRO_SEC*1000)
-#define DEFAULT_FREQ              20000
+#define DEFAULT_FREQ              25000
 #define DEFAULT_DUTY_CYCLE            0
 #define MAX_DUTY_CYCLE              100
 #define MAX_FREQUENCY			 100000
