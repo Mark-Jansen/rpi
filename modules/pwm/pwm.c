@@ -144,7 +144,7 @@ void update_hw_pwm_settings(void)
 /* end of hardware pwm code */
 
 
-
+/* start of exported symbols */
 int pwm_get_settings(struct pwm_settings* arg)
 {
 	unsigned long flags;
@@ -177,6 +177,57 @@ int pwm_set_settings(struct pwm_settings* arg)
 EXPORT_SYMBOL(pwm_set_settings);
 
 
+int pwm_set_enabled(int channel, int enabled)
+{
+  g_Settings[channel].enabled = enabled;
+  if(channel==0)
+  {
+    //hw pwm
+	update_hw_pwm_settings();
+  }
+  if(channel==1)
+  {
+    //softpwm
+  }
+  return 0;
+  //update todo
+}
+EXPORT_SYMBOL(pwm_set_enabled);
+
+
+int pwm_set_duty_cycle(int channel, int duty_cycle)
+{
+  g_Settings[channel].duty_cycle = duty_cycle;
+  if(channel==0)
+  {
+    //hw pwm
+	update_hw_pwm_settings();
+  }
+  if(channel==1)
+  {
+    //softpwm
+  }
+  return 0;
+}
+EXPORT_SYMBOL(pwm_set_duty_cycle);
+
+int pwm_set_frequency (int channel, int frequency)
+{
+  g_Settings[channel].frequency = frequency;
+  if(channel==0)
+  {
+    //hw pwm
+	update_hw_pwm_settings();
+  }
+  if(channel==1)
+  {
+    //softpwm
+  }
+  return 0;
+}
+EXPORT_SYMBOL(pwm_set_frequency);
+
+/* end of exported symbols */
 
 // file operations
 static long pwm_ioctl(struct file *file, unsigned int command, unsigned long arg)
