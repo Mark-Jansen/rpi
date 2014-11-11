@@ -2,9 +2,9 @@
 #define PWM_H
 
 struct pwm_settings {
-    int  channel;				//channel 0 or 1 (channel 0 is hw_pwm / channel 1 is soft_pwm)  
+	int  channel;				//channel 0 or 1 (channel 0 is hw_pwm / channel 1 is soft_pwm)  
 	int  pin;                   //hardware pwm is on gpio18 (pin 12) and cannot be changed!, software pwm pin can be changed.   
-    int  enabled;				//turn pwm on/off
+	int  enabled;				//turn pwm on/off
 	int  frequency;				//0..20000 (default=1000)
 	int  duty_cycle;            //0..100%
 };

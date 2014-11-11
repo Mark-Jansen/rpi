@@ -6,7 +6,7 @@
 #define DRV_REV			"r1"
 #define PWM_MAJOR	    251
 
-
+struct pwm_settings pwm0;
 struct pwm_settings pwm1;
 
 
@@ -17,40 +17,66 @@ static void new_settings(void)
 	pwm1.enabled    = 1;
 	pwm1.frequency  = 20000;
 	pwm1.duty_cycle = 0;
+	
+	pwm0.duty_cycle = 0;
 }
+
 
 static void simple_test(void)
 {
-    volatile int i;
+	volatile int i;
 	for(i=0; i <= 100; i+=20)
 	{
-      pwm1.duty_cycle = i;
-	  pwm_set_settings(&pwm1);
-	  msleep(1000);
-    }
-	
+		pwm1.duty_cycle = i;
+		pwm_set_settings(&pwm1);
+		msleep(1000);
+	}
+
 	for(i=100; i >= 0; i-=20)
 	{
-      pwm1.duty_cycle = i;
-	  pwm_set_settings(&pwm1);
-	  msleep(1000);
-    }
-	
+		pwm1.duty_cycle = i;
+		pwm_set_settings(&pwm1);
+		msleep(1000);
+	}
+
 }
 
+static void simple_hw_test(void)
+{
+	volatile int i;
+	for(i=0; i <= 100; i+=20)
+	{
+		pwm0.duty_cycle = i;
+		pwm_set_settings(&pwm0);
+		msleep(1000);
+	}
+
+	for(i=100; i >= 0; i-=20)
+	{
+		pwm0.duty_cycle = i;
+		pwm_set_settings(&pwm0);
+		msleep(1000);
+	}
+}
 
 static int __init pwm_test_init(void)
 {
-  new_settings();
-  pwm_set_settings(&pwm1);
-  simple_test();
-  
-  return 0;
+	int i;
+        new_settings();
+	pwm_set_settings(&pwm1);
+        for(i=0;i<5;i++)
+        {
+	  simple_test();
+	  simple_hw_test();
+        }
+
+	return 0;
 }
 
 static void __exit pwm_test_exit(void)
 {
-	
+	//set pwm settings back to normal
+	//set gpio pin back to normal
 }
 
 module_init(pwm_test_init);

@@ -24,6 +24,47 @@
 #define MAX_FREQUENCY			 100000
 
 
+/* hardware pwm settings */
+#define GP_BASE      (BCM2708_PERI_BASE + 0x200000) //todo remove!!
+#define PWM_BASE     (BCM2708_PERI_BASE + 0x20C000)
+#define CLOCK_BASE   (BCM2708_PERI_BASE + 0x101000)
+#define PWMMODE 1
+#define MSMODE  2
+
+//todo use gpio from stefan!!
+struct GpioRegisters
+{
+	uint32_t GPFSEL[6];
+	uint32_t Reserved1;
+	uint32_t GPSET[2];
+	uint32_t Reserved2;
+	uint32_t GPCLR[2];
+};
+
+
+struct PwmRegisters
+{
+	uint32_t CTL;
+	uint32_t STA;
+	uint32_t DMAC;
+	uint32_t Reserved1;
+	uint32_t RNG1;
+	uint32_t DAT1;
+	uint32_t FIF1;
+	uint32_t Reserved2;
+	uint32_t RNG2;
+	uint32_t DAT2;
+};
+
+struct ClockRegisters
+{
+	uint32_t Unknown[40];
+	uint32_t PWMCTL;
+	uint32_t CLKDIV;
+};
+
+
+
 extern int debug;
 
 #endif //PWM_INTERNAL_H
