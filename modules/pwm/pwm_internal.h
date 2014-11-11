@@ -25,7 +25,7 @@
 
 
 /* hardware pwm settings */
-#define GP_BASE      (BCM2708_PERI_BASE + 0x200000) //todo remove!!
+#define GP_BASE      (BCM2708_PERI_BASE + 0x200000) //todo use gpio from stefan!!
 #define PWM_BASE     (BCM2708_PERI_BASE + 0x20C000)
 #define CLOCK_BASE   (BCM2708_PERI_BASE + 0x101000)
 #define PWMMODE 1

@@ -3,10 +3,10 @@
 #include <linux/platform_device.h>
 #include <linux/ioctl.h>
 #include <linux/uaccess.h>		//copy_[from/to]_user
-#include <linux/gpio.h> //TODO
-#include <linux/hrtimer.h> //TODO
-#include <linux/delay.h> //TODO
-#include <asm/io.h> //TODO
+#include <linux/gpio.h>         //TODO use gpio from stefan!!
+#include <linux/hrtimer.h> 
+#include <linux/delay.h> 
+#include <asm/io.h>
 
 #include "pwm.h"
 #include "pwm_internal.h"
@@ -20,21 +20,17 @@ static DEFINE_SPINLOCK(g_Lock);
 static struct pwm_settings g_Settings[NR_OF_CHANNELS];
 
 /* hardware pwm */
-struct GpioRegisters   *s_pGpioRegisters; //todo
+struct GpioRegisters   *s_pGpioRegisters; //TODO use gpio from stefan!!
 struct PwmRegisters    *s_PwmRegisters;
 struct ClockRegisters  *s_ClockRegisters;
-//TODO cleanup
 
+//relocate and cleanup this code
 static const int pwmPin = 18;
 double frequency        = 1000.0; // PWM frequency
 double dutyCycle        = 50.0;   // PWM duty Cycle (%)
 unsigned int counts     = 256;    // PWM resolution
 unsigned int divisor    = 75;     // divisor value
 int mode = PWMMODE;               // PWM mode
-
-
-
-
 /* end of hardware pwm */
 
 
@@ -44,13 +40,8 @@ MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
 
 
 /* start of software pwm code*/
-
-/****************************************************************************/
-/* Timer variables block                                                    */
-/****************************************************************************/
 struct hrtimer tm1, tm2;
 static ktime_t t1;
-
 
 enum hrtimer_restart cb1(struct hrtimer *t) {
 	ktime_t now;
@@ -78,13 +69,11 @@ enum hrtimer_restart cb2(struct hrtimer *t) {
 	gpio_set_value(g_Settings[CH1].pin, 0);
 	return HRTIMER_NORESTART;
 }
-
 /* end of software pwm code */
 
 
 
 /* start of hardware pwm code */
-
 static void SetGPIOFunction(int GPIO, int functionCode)
 {
 	int registerIndex = GPIO / 10;
@@ -121,26 +110,24 @@ void configHardwarePwm(void)
 	// needs some time until the PWM module gets disabled, without the delay the PWM module crashs
 	udelay(10); 
 
-	//s_PwmRegisters->RNG1=counts;
-	//s_PwmRegisters->DAT1=counts/2;
-
+	//s_PwmRegisters->RNG1 = counts;
+	//s_PwmRegisters->DAT1 = 0; //dutycycle
 
 	// start PWM1 in
 	if(mode == PWMMODE) //PWM mode 
 		s_PwmRegisters->CTL |= (1 << 0); 
 	else // M/S Mode
-		s_PwmRegisters->CTL |= ( (1 << 7) | (1 << 0) );
+		s_PwmRegisters->CTL |= ((1 << 7) | (1 << 0));
 }
 
 
 void update_hw_pwm_settings(void)
 {
-    //s_PwmRegisters->RNG1=counts;
+	//s_PwmRegisters->RNG1=counts;
 	int dutyCycle = g_Settings[CH0].duty_cycle;
 	int newCount = (counts / 100) * dutyCycle;
 	s_PwmRegisters->DAT1=newCount;
 }
-
 /* end of hardware pwm code */
 
 
@@ -179,55 +166,55 @@ EXPORT_SYMBOL(pwm_set_settings);
 
 int pwm_set_enabled(int channel, int enabled)
 {
-  g_Settings[channel].enabled = enabled;
-  if(channel==0)
-  {
-    //hw pwm
-	update_hw_pwm_settings();
-  }
-  if(channel==1)
-  {
-    //softpwm
-  }
-  return 0;
-  //update todo
+	g_Settings[channel].enabled = enabled;
+	if(channel==0)
+	{
+		//hw pwm
+		update_hw_pwm_settings();
+	}
+	if(channel==1)
+	{
+		//softpwm
+	}
+	return 0;
+	//update todo
 }
 EXPORT_SYMBOL(pwm_set_enabled);
 
 
 int pwm_set_duty_cycle(int channel, int duty_cycle)
 {
-  g_Settings[channel].duty_cycle = duty_cycle;
-  if(channel==0)
-  {
-    //hw pwm
-	update_hw_pwm_settings();
-  }
-  if(channel==1)
-  {
-    //softpwm
-  }
-  return 0;
+	g_Settings[channel].duty_cycle = duty_cycle;
+	if(channel==0)
+	{
+		//hw pwm
+		update_hw_pwm_settings();
+	}
+	if(channel==1)
+	{
+		//softpwm
+	}
+	return 0;
 }
 EXPORT_SYMBOL(pwm_set_duty_cycle);
 
 int pwm_set_frequency (int channel, int frequency)
 {
-  g_Settings[channel].frequency = frequency;
-  if(channel==0)
-  {
-    //hw pwm
-	update_hw_pwm_settings();
-  }
-  if(channel==1)
-  {
-    //softpwm
-  }
-  return 0;
+	g_Settings[channel].frequency = frequency;
+	if(channel==0)
+	{
+		//hw pwm
+		update_hw_pwm_settings();
+	}
+	if(channel==1)
+	{
+		//softpwm
+	}
+	return 0;
 }
 EXPORT_SYMBOL(pwm_set_frequency);
-
 /* end of exported symbols */
+
 
 // file operations
 static long pwm_ioctl(struct file *file, unsigned int command, unsigned long arg)
@@ -267,6 +254,7 @@ static const struct file_operations pwm_fops = {
 
 
 //sysfs
+/*
 static ssize_t duty_cycle_store(struct device *dev,struct device_attribute *attr,const char *buf, size_t len) {
 	unsigned int dc = 0;
 	if (!kstrtouint(buf, 10, &dc)) {
@@ -296,7 +284,7 @@ static ssize_t frequency_show(struct device *dev,struct device_attribute *attr, 
 
 	return sprintf(buf, "%d", g_Settings[CH1].frequency);
 }
-
+*/
 
 static ssize_t show_pwmx(struct device *dev, struct device_attribute *attr, char *buf, int chan)
 {
@@ -328,8 +316,8 @@ static ssize_t show_pwm1(struct device *dev, struct device_attribute *attr, char
 
 static DEVICE_ATTR( pwm0, S_IWUSR | S_IRUGO, show_pwm0, NULL );
 static DEVICE_ATTR( pwm1, S_IWUSR | S_IRUGO, show_pwm1, NULL );
-static DEVICE_ATTR( duty_cycle, S_IWUSR | S_IRUGO, duty_cycle_show, duty_cycle_store );
-static DEVICE_ATTR( frequency, S_IWUSR | S_IRUGO, frequency_show, frequency_store );
+//static DEVICE_ATTR( duty_cycle, S_IWUSR | S_IRUGO, duty_cycle_show, duty_cycle_store );
+//static DEVICE_ATTR( frequency, S_IWUSR | S_IRUGO, frequency_show, frequency_store );
 
 
 static void software_pwm_init(void)
@@ -366,14 +354,13 @@ static void software_pwm_exit(void)
 
 static void hardware_pwm_init(void)
 { 
-    s_pGpioRegisters = (struct GpioRegisters  *) __io_address(GP_BASE); //todo
+	s_pGpioRegisters = (struct GpioRegisters  *) __io_address(GP_BASE); //todo
 	s_PwmRegisters   = (uint32_t *)ioremap(PWM_BASE, sizeof(struct PwmRegisters));
 	s_ClockRegisters = (uint32_t *)ioremap(CLOCK_BASE, sizeof(struct ClockRegisters));
 
-	//set gpio pin as pwm pin!! TODO		
-    SetGPIOFunction(pwmPin, 0b000); //Configure the pin as input (default)
+	SetGPIOFunction(pwmPin, 0b000); //Configure the pin as input (default)
 	SetGPIOFunction(pwmPin, 0b010);	//Configure the pin as pwm pin
-	 
+
 	configHardwarePwm();
 
 	s_PwmRegisters->RNG1=counts;
@@ -383,10 +370,8 @@ static void hardware_pwm_init(void)
 
 static void hardware_pwm_exit(void)
 {
-  SetGPIOFunction(pwmPin, 0);	//Configure the pin as input 
+	SetGPIOFunction(pwmPin, 0);	//Configure the pin as input 
 }
-
-
 
 
 
@@ -419,12 +404,12 @@ static int __init pwm_init(void)
 
 	ret  = device_create_file( g_Device, &dev_attr_pwm0 );
 	ret |= device_create_file( g_Device, &dev_attr_pwm1 );
-	ret |= device_create_file( g_Device, &dev_attr_duty_cycle );
-	ret |= device_create_file( g_Device, &dev_attr_frequency );
+	//ret |= device_create_file( g_Device, &dev_attr_duty_cycle );
+	//ret |= device_create_file( g_Device, &dev_attr_frequency );
 	info( DRV_REV " loaded, major: %d", g_Major );
 
-	software_pwm_init(); //TODO
-	hardware_pwm_init(); //TODO
+	software_pwm_init(); 
+	hardware_pwm_init(); 
 
 	goto out;
 
@@ -444,15 +429,15 @@ static void __exit pwm_exit(void)
 
 	device_remove_file( g_Device, &dev_attr_pwm0 );
 	device_remove_file( g_Device, &dev_attr_pwm1 );
-	device_remove_file( g_Device, &dev_attr_duty_cycle );
-	device_remove_file( g_Device, &dev_attr_frequency );
+	//device_remove_file( g_Device, &dev_attr_duty_cycle );
+	//device_remove_file( g_Device, &dev_attr_frequency );
 	device_destroy( g_Class, MKDEV(g_Major, 0) );
 	class_unregister( g_Class );
 	class_destroy( g_Class );
 	unregister_chrdev( g_Major, DRV_NAME );
 
-	software_pwm_exit(); //TODO
-	hardware_pwm_exit(); //TODO
+	software_pwm_exit(); 
+	hardware_pwm_exit(); 
 	info("unloaded.");
 }
 

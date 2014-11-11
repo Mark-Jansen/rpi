@@ -17,7 +17,7 @@ static void new_settings(void)
 	pwm1.enabled    = 1;
 	pwm1.frequency  = 20000;
 	pwm1.duty_cycle = 0;
-	
+
 	pwm0.duty_cycle = 0;
 }
 
@@ -62,14 +62,15 @@ static void simple_hw_test(void)
 static int __init pwm_test_init(void)
 {
 	int i;
-    new_settings();
+	new_settings();
 	pwm_set_settings(&pwm1);
-    for(i=0;i<2;i++)
-    {
-	  simple_test();
-	  simple_hw_test();
-    }
-    //test hw duty_cycle
+	for(i=0;i<2;i++)
+	{
+		simple_test();
+		simple_hw_test();
+	}
+
+	//test hw duty_cycle
 	msleep(1000);
 	pwm_set_duty_cycle(0,100);
 	msleep(2000);
@@ -77,6 +78,7 @@ static int __init pwm_test_init(void)
 	msleep(2000);
 	pwm_set_duty_cycle(0,0);
 	msleep(2000);
+
 	//test sw duty cycle
 	pwm_set_duty_cycle(1,100);
 	msleep(2000);
@@ -84,7 +86,7 @@ static int __init pwm_test_init(void)
 	msleep(2000);
 	pwm_set_duty_cycle(1,0);
 	msleep(2000);
-	
+
 	return 0;
 }
 
