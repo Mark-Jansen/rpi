@@ -1,40 +1,46 @@
 #ifndef GPIO_H
 #define GPIO_H
 
-// gegevens per I/O aansluiting
+/* I/O settings */ 
 struct gpio_status {
-	int pinNr;		// Nummer van GPIO pin
-	int value;		// voor input de actuele waarde van de GPIOpin. Voor output de waarde die je naar de GPIOpin wilt sturen
-	int function;	// input = 1, output = 0, zie defines
+	int pinNr;		// Number of GPIO pin
+	int value;		// when fuction = output: use this value to write. when function = input: this value is actuel value of pin
+	int function;	// use defines
 };
 
-// registers die goed gezet moeten worden aan de hand van de datasheet
-// deze bevat alle gegevens van alle I/O aansluitingen.
+/* Gpio registers: check datasheet for more information */
 struct GpioRegisters
 {
 	// function select
-	uint32_t GPFSEL[6];		// GPIO SELECT:	Deze kun je gebruiken om een gekozen pin input of output te maken	// check datasheet
-	uint32_t Reserved1;
+	int GPFSEL[6];		// GPIO SELECT:	Deze kun je gebruiken om een gekozen pin input of output te maken	// check datasheet
+	int Reserved1;
 	// output
-	uint32_t GPSET[2];		// GPIO SET: 	Deze kun je gebruiken om de gekozen pin 1 te maken					// check datasheet
-	uint32_t Reserved2;
-	uint32_t GPCLR[2];		// GPIO CLEAR: 	Deze kun je gebruiken om de gekozen pin 0 te maken					// check datasheet
-	uint32_t Reserved3;
+	int GPSET[2];		// GPIO SET: 	Deze kun je gebruiken om de gekozen pin 1 te maken					// check datasheet
+	int Reserved2;
+	int GPCLR[2];		// GPIO CLEAR: 	Deze kun je gebruiken om de gekozen pin 0 te maken					// check datasheet
+	int Reserved3;
 	// input
-	uint32_t GPLEV[2];		// GPIO LEVEL:	Deze geeft de actuele waarden van de GPIO pin
-	uint32_t Reserved4;
+	int GPLEV[2];		// GPIO LEVEL:	Deze geeft de actuele waarden van de GPIO pin
+	int Reserved4;
 };
 
-// 
-#define		OUTPUT				0b001		// check datasheet
+/* function: check datasheet for pin function */
 #define 	INPUT				0b000		// check datasheet
+#define		OUTPUT				0b001		// check datasheet
+#define		ALT0				0b100		// alternate function 0 (pinNr 12 = PWM0, pinNr13 = PWM1, pinNr40 = PWM0, pinNr41 = PWM1, pinNr45 = PWM1)
+#define		ALT1				0b101		// alternate function 1
+#define		ALT2				0b110		// alternate function 2
+#define		ALT3				0b111		// alternate function 3
+#define		ALT4				0b011		// alternate function 4
+#define		ALT5				0b010		// alternate function 5 (pinNr 18 = PWM0, pinNr19 = PWM1)
 
 #define THERMIOC_MAGIC			'G'
 
 #define GPIO_WRITE			_IOW(THERMIOC_MAGIC, 0, struct gpio_status)
 #define GPIO_READ			_IOR(THERMIOC_MAGIC, 1, struct gpio_status)
-#define GPIO_SET_CONFIG		_IOR(THERMIOC_MAGIC, 2, struct gpio_status)
+#define GPIO_SET_CONFIG		_IOW(THERMIOC_MAGIC, 2, struct gpio_status)
 
+/* export symbols */
 int gpio_write(struct gpio_status* arg);
 int gpio_read(struct gpio_status* arg);
 int gpio_set_config(struct gpio_status* arg);
