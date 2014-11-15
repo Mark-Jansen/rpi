@@ -21,17 +21,20 @@ struct adc_config {
 #define ADC_GAIN_4						0x2
 #define ADC_GAIN_8						0x3
 
-#define THERMIOC_MAGIC		'A'
-#define ADC_GET_DATA		_IOWR(THERMIOC_MAGIC, 0, struct adc_data)
+#define THERMIOC_MAGIC_ADC		'A'
+#define ADC_GET_DATA		_IOWR(THERMIOC_MAGIC_ADC, 0, struct adc_data)
 
-#define ADC_GET_CONFIG		_IOR(THERMIOC_MAGIC, 2, struct adc_config)
-#define ADC_SET_CONFIG		_IOW(THERMIOC_MAGIC, 3, struct adc_config)
+#define ADC_GET_CONFIG		_IOR(THERMIOC_MAGIC_ADC, 2, struct adc_config)
+#define ADC_SET_CONFIG		_IOW(THERMIOC_MAGIC_ADC, 3, struct adc_config)
+
+#define ADC_GET_MAX_FOR_RES _IOWR(THERMIOC_MAGIC_ADC, 4, int)	// the int should be used as pointer!!
 
 // exported symbols:
 int adc_get_data(struct adc_data* data);
 int adc_read_device(struct adc_config* cfg, struct adc_data* data);
 int adc_get_config(struct adc_config* cfg);
 int adc_set_config(struct adc_config* cfg);
+int adc_max_for_res(int resolution);
 //
 
 

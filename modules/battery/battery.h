@@ -8,6 +8,7 @@ struct battery_charge {
 
 struct battery_config {
 	int resolution;			// the resolution used to sample the ADC (12, 14, 16 or 18 bits)
+	int max_value;			// override the value that will be used to indicate 100%, when not set it will default to max_value for the resolution selected
 	int num_samples;		// the number of samples that will be used to calculate an average
 	int sample_interval;	// the number of ms between samples
 };

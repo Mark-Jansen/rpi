@@ -26,9 +26,10 @@ static struct device* g_Device = NULL;
 static DEFINE_SPINLOCK(g_Lock);
 static struct battery_charge g_Charge;
 static struct battery_config g_Config = {
-	.resolution = 14,
-	.num_samples = 4,
-	.sample_interval = 60 * 1000
+	.resolution = ADC_RESOLUTION_14B,
+	.max_value = 0,
+	.num_samples = 3,
+	.sample_interval = 10 * 1000
 };
 static struct timer_list g_Timer;
 // we cannot use adc (i2c) from a timer, so we have to use a workqueue
@@ -110,26 +111,12 @@ static int read_adc(int channel, int resolution, int* value)
 	return 0;
 }
 
-static void scale( int resolution, int* values )
+static void scale( int resolution, int max, int* values )
 {
-	int scalar;
-	trace("res: 0x%x", resolution);
-	switch( resolution )
-	{
-	case ADC_RESOLUTION_12B:
-		scalar = ADC_RES_12B_MAX;
-		break;
-	case ADC_RESOLUTION_14B:
-		scalar = ADC_RES_14B_MAX;
-		break;
-	case ADC_RESOLUTION_16B:
-		scalar = ADC_RES_16B_MAX;
-		break;
-	case ADC_RESOLUTION_18B:
-		scalar = ADC_RES_18B_MAX;
-		break;
-	default:
-		return;		// should not happen
+	int scalar = max;
+	trace("");
+	if( !scalar ) {
+		scalar = adc_max_for_res( resolution );
 	}
 	values[0] = values[0] * 100 / scalar;
 	values[1] = values[1] * 100 / scalar;
@@ -152,12 +139,13 @@ static void read_battery_work(struct work_struct *work)
 			if( read_adc( chan, config.resolution, &tmp ) )
 				goto out_reschedule;
 			total[chan] += tmp;
-			if( i > 0 )
-				total[chan] /= 2;
+			if( i > 0 ) {
+				total[chan] >>= 1;
+			}
 		}
 	}	
 	
-	scale( config.resolution, total );
+	scale( config.resolution, config.max_value, total );
 	trace("charge %d%%, %d%%", total[0], total[1]);
 
 	spin_lock_irqsave( &g_Lock, flags );

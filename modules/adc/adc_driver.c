@@ -59,6 +59,25 @@ int adc_set_config(struct adc_config* cfg)
 }
 EXPORT_SYMBOL(adc_set_config);
 
+int adc_max_for_res(int resolution)
+{
+	trace("");
+	resolution &= 0xc;
+	switch( resolution )
+	{
+	case ADC_RESOLUTION_12B:
+		return ADC_RES_12B_MAX;
+	case ADC_RESOLUTION_14B:
+		return ADC_RES_14B_MAX;
+	case ADC_RESOLUTION_16B:
+		return ADC_RES_16B_MAX;
+	case ADC_RESOLUTION_18B:
+		return ADC_RES_18B_MAX;
+	default:
+		return 0;
+	}
+}
+EXPORT_SYMBOL(adc_max_for_res);
 
 // file operations
 static long adc_ioctl(struct file *file, unsigned int command, unsigned long arg)
@@ -66,13 +85,14 @@ static long adc_ioctl(struct file *file, unsigned int command, unsigned long arg
 	long ret = -EFAULT;
 	struct adc_data data;
 	struct adc_config config;
+	int max_value;
 	trace("");
 	switch( command ) {
 		case ADC_GET_DATA:
-			if( copy_from_user( &data, (void*)arg, sizeof(struct adc_data) ) )
+			if( copy_from_user( &data, (void*)arg, sizeof(data) ) )
 					return -EFAULT;
 				ret = adc_get_data( &data );
-			if( copy_to_user( (void*)arg, &data, sizeof(struct adc_data) ) )
+			if( copy_to_user( (void*)arg, &data, sizeof(data) ) )
 				return -EFAULT;
 			break;
 		case ADC_GET_CONFIG:
@@ -80,14 +100,22 @@ static long adc_ioctl(struct file *file, unsigned int command, unsigned long arg
 				ret = 0;
 			else
 				return -ENXIO;
-			if( copy_to_user( (void*)arg, &config, sizeof(struct adc_config) ) )
+			if( copy_to_user( (void*)arg, &config, sizeof(config) ) )
 				return -EFAULT;
 			break;
 		case ADC_SET_CONFIG:
-			if( copy_from_user( &config, (void*)arg, sizeof(struct adc_config) ) )
+			if( copy_from_user( &config, (void*)arg, sizeof(config) ) )
 				return -EFAULT;
 			ret = adc_set_config( &config );
 			break;
+		case ADC_GET_MAX_FOR_RES:
+			if( copy_from_user( &max_value, (void*)arg, sizeof(max_value) ) )
+					return -EFAULT;
+			max_value = adc_max_for_res( max_value );
+			ret = 0;
+			if( copy_to_user( (void*)arg, &max_value, sizeof(max_value) ) )
+				return -EFAULT;
+			break;		
 		default:
 			break;
 	}
