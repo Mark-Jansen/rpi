@@ -1,16 +1,15 @@
-
 #include <linux/fs.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/ioctl.h>
 #include <linux/uaccess.h>		//copy_[from/to]_user
 
-#include <gpio.h>
-#include <pwm.h>
+#include "../gpio/gpio.h"
+#include "../pwm/pwm.h"
 
-#define DRV_NAME		"motor_driver"
-#define DRV_REV			"r1"
-#define EXAMPLE_MAJOR	250
+#define DRV_NAME			"motor_driver"
+#define DRV_REV				"r1"
+#define MOTOR_DRIVER_MAJOR	200
 
 #include "motor_driver.h"
 
@@ -23,46 +22,55 @@ static int g_Major = 0;
 static struct class* g_Class = NULL;
 static struct device* g_Device = NULL;
 
-
 static DEFINE_SPINLOCK(g_Lock);
-static int g_Status = 0;
-
-
 static int debug = 0;
 module_param(debug, int, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
 
-int motor_driver_get_config(struct motor_driver_config* arg)
+struct gpio_status IN1_pin;
+struct gpio_status IN2_pin;
+struct pwm_settings pwm_setting;
+struct motor_driver_encoder_data encoder_data;
+	
+int motor_driver_set_config(struct motor_driver_config* arg)
 {
-	/*unsigned long flags;
+	unsigned long flags;
 	trace("");
 	spin_lock_irqsave( &g_Lock, flags );
-	arg->status = g_Status;
+	IN1_pin.pinNr = arg->direction_in1_pinnr;
+	IN2_pin.pinNr = arg->direction_in2_pinnr;
+	IN1_pin.function = OUTPUT;
+	IN2_pin.function = OUTPUT;
+	pwm_setting.channel = arg->pwm_channel;
+	pwm_setting.frequency = arg->pwm_frequency;
+	pwm_setting.pin = arg->pwm_pinnr;
 	spin_unlock_irqrestore( &g_Lock, flags );
-	return 0;*/
+	return 0;
 }
-EXPORT_SYMBOL(setSpeed);
+EXPORT_SYMBOL(motor_driver_set_config);
 
 int setSpeed(struct motor_driver_setting* arg)
 {
-	/*unsigned long flags;
+	unsigned long flags;
 	trace("");
 	spin_lock_irqsave( &g_Lock, flags );
-	arg->status = g_Status;
+	pwm_setting.duty_cycle = arg->pwm_duty_cycle;
+	IN1_pin.value = arg->direction_pinL;
+	IN2_pin.value = arg->direction_pinR;
 	spin_unlock_irqrestore( &g_Lock, flags );
-	return 0;*/
+	return 0;
 }
 EXPORT_SYMBOL(setSpeed);
 
 int getSpeed(struct motor_driver_encoder_data* arg)
 {
-	/*
+	//TODO get encoderdat from encoder driver
 	unsigned long flags;
-	trace("new value: %d", arg->status);
 	spin_lock_irqsave( &g_Lock, flags );
-	g_Status = arg->status;
+	encoder_data.speed = arg->speed;
+	encoder_data.direction = arg->direction;
 	spin_unlock_irqrestore( &g_Lock, flags );
-	return 0;*/
+	return 0;
 }
 EXPORT_SYMBOL(getSpeed);
 
@@ -79,17 +87,16 @@ static long motor_driver_ioctl(struct file *file, unsigned int command, unsigned
 		case MOTOR_DRIVER_SET_CONFIG:
 			if( copy_from_user( &mconfig, (void*)arg, sizeof(struct motor_driver_config) ) )
 				return -EFAULT;
-			ret = setSpeed( &mconfig );
+			ret = motor_driver_set_config( &mconfig );
 			break;
 		case MOTOR_SETSPEED:
-			if( !getSpeed( &msetting ) )
-				ret = 0;
-			else
-				return -ENXIO;
-			if( copy_to_user( (void*)arg, &msetting, sizeof(struct motor_driver_setting) ) )
+			if( copy_from_user( &msetting, (void*)arg, sizeof(struct motor_driver_setting) ) )
 				return -EFAULT;
+			ret =  !setSpeed( &msetting );
 			break;
 		case MOTOR_GETSPEED:
+			if( copy_from_user( &mdata, (void*)arg, sizeof(struct motor_driver_encoder_data) ) )
+				return -EFAULT;
 			if( !getSpeed( &mdata ) )
 				ret = 0;
 			else
@@ -128,10 +135,10 @@ static ssize_t show_config(struct device *dev, struct device_attribute *attr, ch
 {
 	struct motor_driver_config mconfig;
 	trace("");
-	if( motor_driver_get_config( &mconfig ) ) {
-		return snprintf( buf, PAGE_SIZE, "Failed to read the config\n" )	
+	if( motor_driver_set_config( &mconfig ) ) {
+		return snprintf( buf, PAGE_SIZE, "Failed to read the config\n" );	
 	}else{
-		return snprintf(buf, PAGE_SIZE, "pinnr: %db, leftpinnr: %db, rightpinnr: %db/n",mconfig.pinnr,mconfig.direction_left_pinnr,mconfig.direction_right_pinnr);
+		return snprintf(buf, PAGE_SIZE, "pinnr: %db, leftpinnr: %db, rightpinnr: %db/n",mconfig.direction_in1_pinnr,mconfig.direction_in2_pinnr,mconfig.pwm_pinnr);
 	}
 	return 0;
 }
@@ -141,7 +148,7 @@ static ssize_t show_pwm_setting(struct device *dev, struct device_attribute *att
 	struct motor_driver_setting msetting;
 	trace("");
 	if( !setSpeed( &msetting ) ) {
-		return snprintf(buf, PAGE_SIZE, "Setting: %i\n", msetting.pwm);
+		return snprintf(buf, PAGE_SIZE, "Setting: %i\n", msetting.pwm_duty_cycle);
 	}
 	return 0;
 }
@@ -163,9 +170,9 @@ static ssize_t show_motor_direction(struct device *dev, struct device_attribute 
 	trace("");
 	if( !getSpeed( &mdata ) ) {
 		if(mdata.direction == 0)	
-			return snprintf("Direction: LEFT");
+			return printk("Direction: LEFT");
 		if(mdata.direction == 1)	
-			return snprintf("Direction: RIGHT");
+			return printk("Direction: RIGHT");
 	}
 	return 0;
 }
@@ -181,7 +188,6 @@ static ssize_t show_motor_speed(struct device *dev, struct device_attribute *att
 }
 
 static DEVICE_ATTR( config, S_IWUSR | S_IRUGO, show_config, NULL );
-static DEVICE_ATTR( pwm_pin, S_IWUSR | S_IRUGO, show_pwm_pin, NULL );
 static DEVICE_ATTR( pwm_setting, S_IWUSR | S_IRUGO, show_pwm_setting, NULL );
 static DEVICE_ATTR( direction_setting, S_IWUSR | S_IRUGO, show_direction_setting, NULL );
 static DEVICE_ATTR( motor_direction, S_IWUSR | S_IRUGO, show_motor_direction, NULL );
@@ -214,7 +220,7 @@ static int __init motor_driver_init(void)
 		goto out_device;
 	}
 	
-	ret = device_create_file( g_Device, &dev_attr_pwm_pin );
+	ret = device_create_file( g_Device, &dev_attr_config );
 	ret |= device_create_file( g_Device, &dev_attr_pwm_setting );
 	ret |= device_create_file( g_Device, &dev_attr_direction_setting );
 	ret |= device_create_file( g_Device, &dev_attr_motor_direction );
@@ -237,7 +243,7 @@ static void __exit motor_driver_exit(void)
 {
 	trace("");
 	
-	device_remove_file( g_Device, &dev_attr_pwm_pin );
+	device_remove_file( g_Device, &dev_attr_config );
 	device_remove_file( g_Device, &dev_attr_pwm_setting );
 	device_remove_file( g_Device, &dev_attr_direction_setting );
 	device_remove_file( g_Device, &dev_attr_motor_direction );
