@@ -3,7 +3,10 @@
 #include <linux/platform_device.h>
 #include <linux/ioctl.h>
 #include <linux/uaccess.h>		//copy_[from/to]_user
+#include <asm/io.h>
+#include <mach/platform.h>
 
+#include "motor_driver.h"
 #include "../gpio/gpio.h"
 #include "../pwm/pwm.h"
 
@@ -11,7 +14,7 @@
 #define DRV_REV				"r1"
 #define MOTOR_DRIVER_MAJOR	200
 
-#include "motor_driver.h"
+
 
 #define trace(format, arg...) do { if( debug & 1 ) pr_info( DRV_NAME ": %s: " format "\n", __FUNCTION__, ## arg ); } while (0)
 #define info(format, arg...) pr_info( DRV_NAME ": " format "\n", ## arg )
@@ -32,7 +35,7 @@ struct gpio_status IN2_pin;
 struct pwm_settings pwm_setting;
 struct motor_driver_encoder_data encoder_data;
 	
-int motor_driver_set_config(struct motor_driver_config* arg)
+int motor_driver_set_config(struct motor_driver_setting* arg)
 {
 	unsigned long flags;
 	trace("");
@@ -41,24 +44,36 @@ int motor_driver_set_config(struct motor_driver_config* arg)
 	IN2_pin.pinNr = arg->direction_in2_pinnr;
 	IN1_pin.function = OUTPUT;
 	IN2_pin.function = OUTPUT;
+	IN1_pin.value = arg->direction_pinL;
+	IN2_pin.value = arg->direction_pinR;
 	pwm_setting.channel = arg->pwm_channel;
-	pwm_setting.frequency = arg->pwm_frequency;
 	pwm_setting.pin = arg->pwm_pinnr;
+	pwm_setting.enabled =arg->pwm_enable;
+	pwm_setting.frequency = arg->pwm_frequency;
+	pwm_setting.duty_cycle = arg->pwm_duty_cycle;
+	if (((gpio_write(&IN1_pin)) & (gpio_write(&IN2_pin)) &  (pwm_set_settings(&pwm_setting))) == 0){
 	spin_unlock_irqrestore( &g_Lock, flags );
 	return 0;
+	}else{
+	return -1;
+	}
 }
 EXPORT_SYMBOL(motor_driver_set_config);
 
 int setSpeed(struct motor_driver_setting* arg)
 {
 	unsigned long flags;
+	int ch = arg->pwm_channel;
+	int dc = arg->pwm_duty_cycle;
 	trace("");
 	spin_lock_irqsave( &g_Lock, flags );
-	pwm_setting.duty_cycle = arg->pwm_duty_cycle;
-	IN1_pin.value = arg->direction_pinL;
-	IN2_pin.value = arg->direction_pinR;
+	
+	if ((pwm_set_duty_cycle(ch,dc))== 0){
 	spin_unlock_irqrestore( &g_Lock, flags );
 	return 0;
+	}else{
+	return -1;
+	}
 }
 EXPORT_SYMBOL(setSpeed);
 
@@ -79,15 +94,14 @@ EXPORT_SYMBOL(getSpeed);
 static long motor_driver_ioctl(struct file *file, unsigned int command, unsigned long arg)
 {
 	long ret = -EFAULT;
-	struct motor_driver_config mconfig;
 	struct motor_driver_setting msetting;
 	struct motor_driver_encoder_data mdata;
 	trace("");
 	switch( command ) {
 		case MOTOR_DRIVER_SET_CONFIG:
-			if( copy_from_user( &mconfig, (void*)arg, sizeof(struct motor_driver_config) ) )
+			if( copy_from_user( &msetting, (void*)arg, sizeof(struct motor_driver_setting) ) )
 				return -EFAULT;
-			ret = motor_driver_set_config( &mconfig );
+			ret = motor_driver_set_config( &msetting );
 			break;
 		case MOTOR_SETSPEED:
 			if( copy_from_user( &msetting, (void*)arg, sizeof(struct motor_driver_setting) ) )
@@ -133,7 +147,7 @@ static const struct file_operations motor_driver_fops = {
 //sysfs
 static ssize_t show_config(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	struct motor_driver_config mconfig;
+	struct motor_driver_setting mconfig;
 	trace("");
 	if( motor_driver_set_config( &mconfig ) ) {
 		return snprintf( buf, PAGE_SIZE, "Failed to read the config\n" );	

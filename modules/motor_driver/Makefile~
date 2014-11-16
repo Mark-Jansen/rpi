@@ -1,7 +1,6 @@
 
-
 DEBUG = n
-MODULE_NAME = ultrasoon_driver
+MODULE_NAME = motor_driver
 
 CROSS_COMPILE=$(HOME)/el32-buildroot/output/host/usr/bin/arm-linux-
 KDIR:= $(HOME)/el32-buildroot/output/build/linux-rpi-3.6.y
