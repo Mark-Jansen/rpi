@@ -2,18 +2,23 @@
 # try to use the environment variable of BUILDROOT if it's defined,
 # otherwise use a hardcoded path
 ifeq "$(BUILDROOT)" ""
-	L_BUILDROOT:=$(HOME)/buildroot/
+	L_BUILDROOT:=$(HOME)/el32-buildroot/
 else
 	L_BUILDROOT:=$(BUILDROOT)
 endif
 
 CROSS_COMPILE:=$(L_BUILDROOT)/output/host/usr/bin/arm-linux-
 
-.PHONY: all clean
+all: test adc_test
 
-all:
-	$(CROSS_COMPILE)g++ test.cpp -o test -I../modules
-	$(CROSS_COMPILE)g++ testpwm.cpp -o testpwm -I../modules
+.PHONY: all, clean
+
+test: test.cpp
+	$(CROSS_COMPILE)g++ test.cpp -o ../build/test -I../modules
+
+adc_test: adc_test.cpp
+	$(CROSS_COMPILE)g++ adc_test.cpp -o ../build/adc_test -I../modules
+
 clean:
-	rm -rf *.o test testpwm
+	rm -f *.o ../build/test ../build/adc_test
 
