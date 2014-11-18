@@ -22,7 +22,7 @@ static int g_Major = 0;
 static struct class* g_Class = NULL;
 static struct device* g_Device = NULL;
 
-
+// Spinlock to protect the global charge and config state.
 static DEFINE_SPINLOCK(g_Lock);
 static struct battery_charge g_Charge;
 static struct battery_config g_Config = {
@@ -53,6 +53,7 @@ static void reschedule(int msec)
 }
 
 
+// retrieve the global battery charge state (available as exported symbol and ioctl)
 int battery_get_charge(struct battery_charge* arg)
 {
 	unsigned long flags;
@@ -64,6 +65,7 @@ int battery_get_charge(struct battery_charge* arg)
 }
 EXPORT_SYMBOL(battery_get_charge);
 
+// retrieve the global config state (available as exported symbol and ioctl)
 int battery_get_config(struct battery_config* cfg)
 {
 	unsigned long flags;
@@ -75,6 +77,8 @@ int battery_get_config(struct battery_config* cfg)
 }
 EXPORT_SYMBOL(battery_get_config);
 
+// set the global config state,
+//  reschedule the timer if the interval is changed.
 int battery_set_config(struct battery_config* cfg)
 {
 	unsigned long flags;
@@ -94,6 +98,7 @@ int battery_set_config(struct battery_config* cfg)
 EXPORT_SYMBOL(battery_set_config);
 
 
+// helper function to read the adc on the specified channel & resolution.
 static int read_adc(int channel, int resolution, int* value)
 {
 	struct adc_config cfg = {
@@ -111,6 +116,9 @@ static int read_adc(int channel, int resolution, int* value)
 	return 0;
 }
 
+// scale the provided values (2) so that max = 100%
+//  when max is not specified, queries the adc for the maximum value that can be reached
+//  on the provided resolution
 static void scale( int resolution, int max, int* values )
 {
 	int scalar = max;
@@ -122,6 +130,7 @@ static void scale( int resolution, int max, int* values )
 	values[1] = values[1] * 100 / scalar;
 }
 
+// workqueue callback, reads the adc on 2 channels, and converts the value to a percentage.
 static void read_battery_work(struct work_struct *work)
 {
 	struct battery_config config;
@@ -157,6 +166,7 @@ out_reschedule:
 	reschedule( config.sample_interval );
 }
 
+// timer callback, schedules work so the adc will be read in a valid context
 static void read_battery_fn(unsigned long arg)
 {
 	trace("");
