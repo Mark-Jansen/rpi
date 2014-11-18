@@ -9,7 +9,7 @@
 
 #define DRV_NAME		"gpio"
 #define DRV_REV			"r1"
-#define DRV_MAJOR		253
+#define DRV_MAJOR		0
 
 #include "gpio.h"
 

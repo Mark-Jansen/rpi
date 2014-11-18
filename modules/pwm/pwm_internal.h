@@ -3,7 +3,7 @@
 
 #define DRV_NAME		"pwm"
 #define DRV_REV			"r1"
-#define PWM_MAJOR	    252
+#define PWM_MAJOR	    0
 
 #define NR_OF_CHANNELS  2
 #define CH0				0

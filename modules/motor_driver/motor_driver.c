@@ -12,7 +12,7 @@
 
 #define DRV_NAME			"motor_driver"
 #define DRV_REV				"r1"
-#define MOTOR_DRIVER_MAJOR	200
+#define MOTOR_DRIVER_MAJOR	0
 
 
 
