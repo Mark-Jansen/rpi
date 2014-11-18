@@ -1,3 +1,4 @@
+// adc global setup / entry symbols
 
 #include <linux/fs.h>
 #include <linux/module.h>
@@ -15,6 +16,7 @@ static int g_Major = 0;
 static struct class* g_Class = NULL;
 static struct device* g_Device = NULL;
 
+// spinlock used to protect the global config
 static DEFINE_SPINLOCK(g_Lock);
 static struct adc_config g_Config = {
 	.resolution = ADC_RESOLUTION_14B,
@@ -25,7 +27,7 @@ int debug = 0;
 module_param(debug, int, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
 
-
+// read the adc with the global config, available as exported symbol and as ioctl
 int adc_get_data(struct adc_data* data)
 {
 	struct adc_config cfg;
@@ -35,6 +37,7 @@ int adc_get_data(struct adc_data* data)
 }
 EXPORT_SYMBOL(adc_get_data);
 
+// read the global config, available as exported symbol and as ioctl
 int adc_get_config(struct adc_config* cfg)
 {
 	unsigned long flags;
@@ -47,6 +50,7 @@ int adc_get_config(struct adc_config* cfg)
 }
 EXPORT_SYMBOL(adc_get_config);
 
+// store the global config, available as exported symbol and as ioctl
 int adc_set_config(struct adc_config* cfg)
 {
 	unsigned long flags;
@@ -59,6 +63,7 @@ int adc_set_config(struct adc_config* cfg)
 }
 EXPORT_SYMBOL(adc_set_config);
 
+// helper function that returns maximum value for the specified adc resolution, available as exported symbol and as ioctl
 int adc_max_for_res(int resolution)
 {
 	trace("");

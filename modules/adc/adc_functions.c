@@ -1,8 +1,9 @@
+// adc helper functions
 #include <linux/module.h>
 #include <linux/errno.h>
 #include "adc_internal.h"
 
-// see (2208c.pdf page 5)
+// time needed for the conversion. see (2208c.pdf page 5)
 unsigned long adc_conversionTime( int resolution )
 {
 	switch( resolution ) {
@@ -22,6 +23,7 @@ unsigned long adc_conversionTime( int resolution )
 
 static const unsigned char kNotReady = 0x80;
 
+// decode the raw value to a usable value (int)
 int adc_decode( int* result, char buf[4] )
 {
 	int res, status, dataSize, i;

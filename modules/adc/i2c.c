@@ -1,3 +1,4 @@
+// adc i2c functions
 
 #include <linux/module.h>
 #include <linux/platform_device.h>
@@ -8,15 +9,18 @@
 #include "adc_internal.h"
 #include "adc.h"
 
+// guard against a misconfigured kernel
 #if !defined(CONFIG_I2C) && !defined(CONFIG_I2C_MODULE)
 #error "I2C should be enabled in the kernel!"
 #endif
 
+// i2c client & mutex to protect it, we cannot use a spinlock here, this causes problems with the i2c functions.
 static struct i2c_client *g_Client;
 static DEFINE_MUTEX(g_I2CLock);
 
-static const uint8_t kNewConversion = 0x80;
+static const uint8_t kNewConversion = 0x80;			// bitmask to indicate to the adc we want a new conversion (single shot)
 
+// helper function to read from the i2c device
 static int i2c_read( char* buf, int count )
 {
 	int ret = -ENODEV;
@@ -29,6 +33,7 @@ static int i2c_read( char* buf, int count )
 	return (count == ret) ? 0 : ret;
 }
 
+// helper function to write to the i2c device
 static int i2c_write( char* buf, int count )
 {
 	int ret = -ENODEV;
@@ -41,9 +46,12 @@ static int i2c_write( char* buf, int count )
 	return (count == ret) ? 0 : ret;
 }
 
+// read the adc chip with i2c.
+// we read the adc in single shot mode, waiting for the result.
 int adc_read_device(struct adc_config* cfg, struct adc_data* data)
 {
 	char buf[4];
+	// validate inputs
 	int gain = (cfg->gain & 3);
 	int resolution = (cfg->resolution & 0xc);
 	int chan = (data->channel & 1);
@@ -65,6 +73,7 @@ int adc_read_device(struct adc_config* cfg, struct adc_data* data)
 }
 EXPORT_SYMBOL(adc_read_device);
 
+// i2c setup code
 static int __devinit adc_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	trace("addr: 0x%x", client->addr);
@@ -81,6 +90,7 @@ static int __devexit adc_i2c_remove( struct i2c_client *client )
 	return 0;
 }
 
+// define the i2c address the chip is registered on.
 static struct i2c_board_info adc_i2c_board_info = {
 	I2C_BOARD_INFO("MCP3422A0", 0x68),
 	.platform_data = &adc_i2c_board_info,
