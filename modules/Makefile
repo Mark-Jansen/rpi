@@ -1,7 +1,11 @@
 
 # add each new target to 'TARGETS'
 # order is important, if battery depends on adc, adc should be first!
+<<<<<<< HEAD
 TARGETS = gpio pwm motor_driver led
+=======
+TARGETS = example adc battery
+>>>>>>> 4aaffe8147fadc0cf2b37a3df12bf171cfc960ee
 PREFIX = $(shell echo `pwd`)/../build/modules/
 
 .PHONY: all clean
