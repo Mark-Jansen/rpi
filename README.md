@@ -15,3 +15,24 @@ Directory structure:
 Buildroot used
 ===
 https://github.com/fhict/el32-buildroot
+
+
+Buildroot bouwen met externe toolchain
+===
+```
+cd ~/el32-buildroot
+make menuconfig
+```
+- Target abi: EABI (niet EABIHF)
+- Build options -> Host Dir: $(HOME)/rpi_cross
+- Toolchain -> Toolchain type: Buildroot toolchain
+- Toolchain -> Enable c++ support: yes
+```
+make clean && make
+make menuconfig
+```
+- Toolchain -> Toolchain type: External toolchain
+- Toolchain -> Toolchain path: $(HOME)/rpi_cross/usr
+- Toolchain -> Toolchain has c++ support: yes
+```
+make clean && make
