@@ -34,11 +34,11 @@ struct GpioRegisters
 #define		ALT4				0b011		// alternate function 4
 #define		ALT5				0b010		// alternate function 5 (pinNr 18 = PWM0, pinNr19 = PWM1)
 
-#define THERMIOC_MAGIC			'G'
+#define THERMIOC_MAGIC_GPIO			'G'
 
-#define GPIO_WRITE			_IOW(THERMIOC_MAGIC, 0, struct gpio_status)
-#define GPIO_READ			_IOR(THERMIOC_MAGIC, 1, struct gpio_status)
-#define GPIO_SET_CONFIG		_IOW(THERMIOC_MAGIC, 2, struct gpio_status)
+#define GPIO_WRITE					_IOW(THERMIOC_MAGIC_GPIO, 0, struct gpio_status)
+#define GPIO_READ					_IOR(THERMIOC_MAGIC_GPIO, 1, struct gpio_status)
+#define GPIO_SET_CONFIG				_IOW(THERMIOC_MAGIC_GPIO, 2, struct gpio_status)
 
 /* export symbols */
 int gpio_write(struct gpio_status* arg);

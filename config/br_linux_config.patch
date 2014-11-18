@@ -1,0 +1,12 @@
+diff --git a/board/raspberrypi/linux-3.6.config b/board/raspberrypi/linux-3.6.config
+index b214522..5de16be 100644
+--- a/board/raspberrypi/linux-3.6.config
++++ b/board/raspberrypi/linux-3.6.config
+@@ -191,3 +191,8 @@ CONFIG_CRYPTO_DES=y
+ # CONFIG_CRYPTO_HW is not set
+ CONFIG_CRC_ITU_T=y
+ CONFIG_LIBCRC32C=y
++CONFIG_I2C=y
++CONFIG_I2C_CHARDEV=y
++CONFIG_I2C_BCM2708=y
++CONFIG_I2C_BOARDINFO=y

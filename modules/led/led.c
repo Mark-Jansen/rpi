@@ -7,7 +7,7 @@
 
 #define LED_NAME		"led"
 #define LED_REV			"r1"
-#define LED_MAJOR		251
+#define LED_MAJOR		0
 
 #include "led.h"
 #include "../gpio/gpio.h"

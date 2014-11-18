@@ -6,3 +6,4 @@ Module.symvers
 *.mod
 *.mod.c
 modules.order
+build/

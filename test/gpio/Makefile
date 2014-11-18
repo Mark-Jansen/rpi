@@ -12,8 +12,8 @@ CROSS_COMPILE:=$(L_BUILDROOT)/output/host/usr/bin/arm-linux-
 .PHONY: all clean
 
 all:
-	$(CROSS_COMPILE)g++ gpiotest.cpp -o gpiotest -I../modules
+	$(CROSS_COMPILE)g++ gpio_driver_test.cpp -o gpio_driver_test -I../modules
 
 clean:
-	rm -rf *.o gpiotest
+	rm -rf *.o gpio_driver_test
 

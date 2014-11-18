@@ -21,6 +21,7 @@ PWD:=$(shell pwd)
 EXTRA_CFLAGS += -DEXPORT_SYMTAB
 obj-m += $(MODULE_NAME).o
 
+
 all:
 	$(MAKE) CROSS_COMPILE=$(CROSS_COMPILE) ARCH=$(ARCH) -C $(KDIR) SUBDIRS=$(PWD) modules
 
