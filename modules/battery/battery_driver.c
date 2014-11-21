@@ -6,21 +6,9 @@
 #include <linux/uaccess.h>		//copy_[from/to]_user
 #include <linux/timer.h>
 
-#define DRV_NAME		"battery"
-#define DRV_REV			"r1"
-#define BATTERY_MAJOR	250
-
 #include "battery.h"
 #include "../adc/adc.h"
-
-#define trace(format, arg...) do { if( debug & 1 ) pr_info( DRV_NAME ": %s: " format "\n", __FUNCTION__, ## arg ); } while (0)
-#define info(format, arg...) pr_info( DRV_NAME ": " format "\n", ## arg )
-#define warning(format, arg...) pr_warn( DRV_NAME ": " format "\n", ## arg )
-#define error(format, arg...) pr_err( DRV_NAME ": " format "\n", ## arg )
-
-static int g_Major = 0;
-static struct class* g_Class = NULL;
-static struct device* g_Device = NULL;
+#include "../common/common.h"
 
 // Spinlock to protect the global charge and config state.
 static DEFINE_SPINLOCK(g_Lock);
@@ -36,10 +24,6 @@ static struct timer_list g_Timer;
 static struct workqueue_struct* g_Workqueue;
 static struct work_struct g_Work;
 
-
-static int debug = 0;
-module_param(debug, int, S_IRUGO | S_IWUSR);
-MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
 
 static void reschedule(int msec)
 {
@@ -228,86 +212,51 @@ static ssize_t show_level(struct device *dev, struct device_attribute *attr, cha
 static DEVICE_ATTR( level, S_IWUSR | S_IRUGO, show_level, NULL );
 
 
-static int __init battery_init(void)
+static int battery_init(struct device* dev)
 {
-	int ret = -1;
+	int ret;
 	trace("");
-	
-	g_Major = register_chrdev( BATTERY_MAJOR, DRV_NAME, &battery_fops );
-	if( g_Major < 0 ) {
-		error( "could not register device: %d", g_Major );
-		goto out;
-	} if( g_Major == 0 ) {
-		g_Major = BATTERY_MAJOR;
-	}
 
-	g_Class = class_create( THIS_MODULE, DRV_NAME );
-	if( IS_ERR(g_Class) ) {
-		error( "could not register class %s", DRV_NAME );
-		ret = PTR_ERR( g_Class );
-		goto out_chrdev;
-	}
-	
-	g_Device = device_create( g_Class, NULL, MKDEV(g_Major, 0), NULL, DRV_NAME );
-	if( IS_ERR(g_Device) ) {
-		error( "could not create device %s", DRV_NAME );
-		ret = PTR_ERR( g_Device );
-		goto out_device;
-	}
-	ret = device_create_file( g_Device, &dev_attr_level );
+	ret = device_create_file( dev, &dev_attr_level );
 	if( ret ) {
 		error( "could not create file" );
-		goto out_file;
+		return ret;
 	}
 	g_Workqueue = create_singlethread_workqueue( "battery_workqueue" );
 	if( g_Workqueue == NULL ) {
+		device_remove_file( dev, &dev_attr_level );
 		error( "could not create workqueue" );
-		ret = -1;
-		goto out_workqueue;
+		return -1;
 	}
 	INIT_WORK( &g_Work, read_battery_work );
 
 	init_timer( &g_Timer );
 	g_Timer.function = read_battery_fn;
 
-	info( DRV_REV " loaded, major: %d", g_Major );
 	reschedule( 200 );		// schedule the first timer
-
-	goto out;
-
-out_workqueue:
-	device_remove_file( g_Device, &dev_attr_level );
-out_file:
-	device_destroy( g_Class, MKDEV(g_Major, 0) );
-out_device:
-	class_unregister( g_Class );
-	class_destroy( g_Class );
-out_chrdev:
-	unregister_chrdev(g_Major, DRV_NAME);
-out:
 	return ret;
 }
 
-static void __exit battery_exit(void)
+static void battery_exit(struct device* dev)
 {
 	trace("");
 
 	reschedule( 0 );		// make sure we kill the timer :)
 	flush_workqueue( g_Workqueue );
 	destroy_workqueue( g_Workqueue );
-	device_remove_file( g_Device, &dev_attr_level );
-	device_destroy( g_Class, MKDEV(g_Major, 0) );
-	class_unregister( g_Class );
-	class_destroy( g_Class );
-	unregister_chrdev( g_Major, DRV_NAME );
-
-	info("unloaded.");
+	device_remove_file( dev, &dev_attr_level );
 }
 
-module_init(battery_init);
-module_exit(battery_exit);
+struct driver_info info = {
+	.name = "battery",
+	.major = 250,
+	.fops = &battery_fops,
+	.init = battery_init,
+	.exit = battery_exit
+};
+
 
 MODULE_AUTHOR("Mark Jansen <mark@jansen.co.nl>");
 MODULE_DESCRIPTION("Battery charge indication driver");
 MODULE_LICENSE("GPL");
-MODULE_VERSION(DRV_REV);
+MODULE_VERSION("r2");

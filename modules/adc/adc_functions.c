@@ -1,7 +1,9 @@
 // adc helper functions
 #include <linux/module.h>
 #include <linux/errno.h>
+#include <linux/platform_device.h>
 #include "adc_internal.h"
+#include "../common/common.h"
 
 // time needed for the conversion. see (2208c.pdf page 5)
 unsigned long adc_conversionTime( int resolution )
