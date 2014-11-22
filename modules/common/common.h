@@ -5,10 +5,12 @@ struct driver_info
 {
 	const char* name;
 	int major;
+
 	const struct file_operations* fops;
-	
-	int (*init)(struct device* dev);
-	void (*exit)(struct device* dev);
+	const struct device_attribute** dattrs;
+ 
+	int (*init)(void);
+	void (*exit)(void);
 };
 
 extern struct driver_info info;		//implement this yourself.

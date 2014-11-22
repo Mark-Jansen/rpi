@@ -57,33 +57,18 @@ static ssize_t gyro_data_show(struct device *dev, struct device_attribute *attr,
 
 static DEVICE_ATTR( data, S_IWUSR | S_IRUGO, gyro_data_show, NULL );
 
-static int gyro_init(struct device* dev)
-{
-	int ret;
-	trace("");
-
-	ret = device_create_file( dev, &dev_attr_data );
-
-	if( !ret ) {
-		ret = gyro_i2c_init();
-	}
-	return ret;
-}
-
-static void gyro_exit(struct device* dev)
-{
-	trace("");
-
-	gyro_i2c_exit();
-	device_remove_file( dev, &dev_attr_data );
-}
+static const struct device_attribute* gyro_devattrs[] = {
+	&dev_attr_data,
+	NULL
+};
 
 struct driver_info info = {
 	.name = DRV_NAME,
 	.major = 0,
 	.fops = &gyro_fops,
-	.init = gyro_init,
-	.exit = gyro_exit
+	.dattrs = gyro_devattrs,
+	.init = gyro_i2c_init,
+	.exit = gyro_i2c_exit
 };
 
 

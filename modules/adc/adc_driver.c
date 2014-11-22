@@ -160,38 +160,20 @@ static DEVICE_ATTR( config, S_IWUSR | S_IRUGO, show_config, NULL );
 static DEVICE_ATTR( chan0, S_IWUSR | S_IRUGO, show_chan0, NULL );
 static DEVICE_ATTR( chan1, S_IWUSR | S_IRUGO, show_chan1, NULL );
 
-
-static int adc_init(struct device* dev)
-{
-	int ret;
-	trace("");
-
-	ret = device_create_file( dev, &dev_attr_config );
-	ret |= device_create_file( dev, &dev_attr_chan0 );
-	ret |= device_create_file( dev, &dev_attr_chan1 );
-
-	if( !ret ) {
-		ret = adc_i2c_init();
-	}
-	return ret;
-}
-
-static void adc_exit(struct device* dev)
-{
-	trace("");
-
-	adc_i2c_exit();
-	device_remove_file( dev, &dev_attr_config );
-	device_remove_file( dev, &dev_attr_chan0 );
-	device_remove_file( dev, &dev_attr_chan1 );
-}
+static const struct device_attribute* adc_devattrs[] = {
+	&dev_attr_config,
+	&dev_attr_chan0,
+	&dev_attr_chan1,
+	NULL
+};
 
 struct driver_info info = {
 	.name = DRV_NAME,
-	.major = 251,
+	.major = 0,
 	.fops = &adc_fops,
-	.init = adc_init,
-	.exit = adc_exit
+	.dattrs = adc_devattrs,
+	.init = adc_i2c_init,
+	.exit = adc_i2c_exit
 };
 
 

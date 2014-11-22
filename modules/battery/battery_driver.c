@@ -211,20 +211,17 @@ static ssize_t show_level(struct device *dev, struct device_attribute *attr, cha
 
 static DEVICE_ATTR( level, S_IWUSR | S_IRUGO, show_level, NULL );
 
+static const struct device_attribute* battery_devattrs[] = {
+	&dev_attr_level,
+	NULL
+};
 
-static int battery_init(struct device* dev)
+static int battery_init(void)
 {
-	int ret;
 	trace("");
 
-	ret = device_create_file( dev, &dev_attr_level );
-	if( ret ) {
-		error( "could not create file" );
-		return ret;
-	}
 	g_Workqueue = create_singlethread_workqueue( "battery_workqueue" );
 	if( g_Workqueue == NULL ) {
-		device_remove_file( dev, &dev_attr_level );
 		error( "could not create workqueue" );
 		return -1;
 	}
@@ -234,23 +231,23 @@ static int battery_init(struct device* dev)
 	g_Timer.function = read_battery_fn;
 
 	reschedule( 200 );		// schedule the first timer
-	return ret;
+	return 0;
 }
 
-static void battery_exit(struct device* dev)
+static void battery_exit(void)
 {
 	trace("");
 
 	reschedule( 0 );		// make sure we kill the timer :)
 	flush_workqueue( g_Workqueue );
 	destroy_workqueue( g_Workqueue );
-	device_remove_file( dev, &dev_attr_level );
 }
 
 struct driver_info info = {
 	.name = "battery",
-	.major = 250,
+	.major = 0,
 	.fops = &battery_fops,
+	.dattrs = battery_devattrs,
 	.init = battery_init,
 	.exit = battery_exit
 };

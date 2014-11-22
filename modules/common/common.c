@@ -15,6 +15,7 @@ MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
 static int common_init(void)
 {
 	int ret = -1;
+	int num = 0;
 	trace("");
 	
 	ret = register_chrdev( info.major, info.name, info.fops );
@@ -39,17 +40,32 @@ static int common_init(void)
 		goto out_device;
 	}
 
-	if( info.init ) {
-		ret = info.init( g_Device );
-		if( ret ) {
-			goto out_device;
+	if( info.dattrs ) {
+		for( num = 0; info.dattrs[num]; ++num ) {
+			ret = device_create_file( g_Device, info.dattrs[num] );
+			if( ret ) {
+				goto out_devattr;
+			}
 		}
 	}
-	//ret = device_create_file( g_Device, &dev_attr_level );
+
+	if( info.init ) {
+		ret = info.init();
+		if( ret ) {
+			goto out_devattr;
+		}
+	}
 
 	info( "loaded, major: %d", info.major );
 	
 	goto out;
+
+out_devattr:
+	for( --num; num >= 0; --num ) {
+		if( info.dattrs[num] ) {
+			device_remove_file( g_Device, info.dattrs[num] );
+		}
+	}
 
 out_device:
 	class_unregister( g_Class );
@@ -65,7 +81,7 @@ static void common_exit(void)
 	trace("");
 	
 	if( info.exit ) {
-		info.exit( g_Device );
+		info.exit();
 	}
 	
 	//device_remove_file( g_Device, &dev_attr_level );
