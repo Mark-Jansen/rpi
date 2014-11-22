@@ -3,11 +3,15 @@
 
 #define DRV_NAME		"pwm"
 #define DRV_REV			"r1"
-#define PWM_MAJOR	    252
+#define PWM_MAJOR	    247
 
 #define NR_OF_CHANNELS  2
-#define CH0				0
-#define CH1				1
+#define HW_PWM_CH		0  //todo rename!!
+#define SW_PWM_CH		1
+
+#define FALSE			0
+#define TRUE			1
+
 
 #define trace(format, arg...) do { if( debug & 1 ) pr_info( DRV_NAME ": %s: " format "\n", __FUNCTION__, ## arg ); } while (0)
 #define info(format, arg...) pr_info( DRV_NAME ": " format "\n", ## arg )
@@ -30,6 +34,14 @@
 #define CLOCK_BASE   (BCM2708_PERI_BASE + 0x101000)
 #define PWMMODE 1
 #define MSMODE  2
+#define DEFAULT_PWM_PIN             18
+
+//relocate and cleanup this code
+double frequency        = 25000.0;// PWM frequency
+double dutyCycle        = 0;      // PWM duty Cycle (%)
+unsigned int counts     = 256;    // PWM resolution
+unsigned int divisor    = 3;      // divisor value
+int mode = PWMMODE;               // PWM mode
 
 //todo use gpio from stefan!!
 struct GpioRegisters
@@ -40,7 +52,6 @@ struct GpioRegisters
 	uint32_t Reserved2;
 	uint32_t GPCLR[2];
 };
-
 
 struct PwmRegisters
 {
@@ -62,8 +73,6 @@ struct ClockRegisters
 	uint32_t PWMCTL;
 	uint32_t CLKDIV;
 };
-
-
 
 extern int debug;
 

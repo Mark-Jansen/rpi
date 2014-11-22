@@ -19,12 +19,12 @@ static void new_settings(void)
 	pwm1.duty_cycle = 0;
 
 	//we can only set duty_cycle for hardware pwm
-        //the rest of the settings are fixed for now
-        //hw pwm channel = 0
-        //hw pwm pin     = 18
-        //hw pwm freq    = 25000 Hz
-        //hw pwm is enabled by default and dutycyle is set to zero by default!!
-        pwm0.duty_cycle = 0;
+	//the rest of the settings are fixed for now
+	//hw pwm channel = 0
+	//hw pwm pin     = 18
+	//hw pwm freq    = 25000 Hz
+	//hw pwm is enabled by default and dutycyle is set to zero by default!!
+	pwm0.duty_cycle = 0;
 }
 
 
