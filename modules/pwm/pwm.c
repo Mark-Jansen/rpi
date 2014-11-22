@@ -79,9 +79,6 @@ static void SetGPIOFunction(int GPIO, int functionCode)
 	s_pGpioRegisters->GPFSEL[registerIndex] = (oldValue & ~mask) | ((functionCode << bit) & mask);
 }
 
-
-
-
 void configHardwarePwm(void)
 {
     const int scaleFactor = 100000;
@@ -98,12 +95,11 @@ void configHardwarePwm(void)
 
 	//calculate divisor value for PWM1 clock...base frequency is 19.2MHz
 	period = (1 * scaleFactor) /  g_Settings[HW_PWM_CH].frequency;
-	countDuration = period * scaleFactor / (counts);
+	countDuration = period * scaleFactor / (COUNTS);
 	divisor = 19200000 / ( scaleFactor / countDuration);
 	divisor = divisor / scaleFactor;
 	trace("calculated divisor= %d",divisor);
 	//TODO
-	
 
 	//set divisor
 	s_ClockRegisters->CLKDIV = 0x5A000000 | divisor << 12;
@@ -117,7 +113,7 @@ void configHardwarePwm(void)
 	// needs some time until the PWM module gets disabled, without the delay the PWM module crashs
 	udelay(10); 
 
-	s_PwmRegisters->RNG1 = counts;
+	s_PwmRegisters->RNG1 = COUNTS;
 	//s_PwmRegisters->DAT1 = 0; //dutycycle
 
 	// start PWM1 in
@@ -130,10 +126,10 @@ void configHardwarePwm(void)
 
 void update_hw_pwm_settings(void)
 {
-	//s_PwmRegisters->RNG1=counts;
+	//s_PwmRegisters->RNG1=COUNTS;
 	int dutyCycle = g_Settings[HW_PWM_CH].duty_cycle;
-	//int newCount = (counts / 100) * dutyCycle;
-	int newCount = (((counts * 1000) / 100) * dutyCycle) / 1000;
+	//int newCount = (COUNTS / 100) * dutyCycle;
+	int newCount = (((COUNTS * 1000) / 100) * dutyCycle) / 1000;
 	trace("newCount = %d",newCount);
 	s_PwmRegisters->DAT1=newCount;
 }
@@ -166,7 +162,11 @@ int pwm_set_settings(struct pwm_settings* arg)
 	g_Settings[arg->channel].frequency  = arg->frequency;
 	g_Settings[arg->channel].duty_cycle = arg->duty_cycle;
 	g_Settings[arg->channel].enabled    = arg->enabled;
-	if(arg->channel == HW_PWM_CH) { update_hw_pwm_settings(); } //todo
+	if(arg->channel == HW_PWM_CH) 
+	{ 
+	  update_hw_pwm_settings(); //todo
+	  configHardwarePwm();
+	}
 	spin_unlock_irqrestore( &g_Lock, flags );
 	return 0;
 }
@@ -362,7 +362,7 @@ static void software_pwm_init(void)
 	g_Settings[SW_PWM_CH].pin = DEFAULT_GPIO_OUTPUT; //TODO
 	g_Settings[SW_PWM_CH].frequency = DEFAULT_FREQ;
 	g_Settings[SW_PWM_CH].duty_cycle = 0;
-	g_Settings[SW_PWM_CH].enabled = TRUE;
+	g_Settings[SW_PWM_CH].enabled = TRUE; //todo
 
 	t_ns = (NANO_SEC)/DEFAULT_FREQ;
 	hrtimer_init(&tm1, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
@@ -385,6 +385,7 @@ static void software_pwm_exit(void)
 	{
 		hrtimer_cancel(&tm2);
 	}
+	gpio_set_value(g_Settings[SW_PWM_CH].pin, 0);
 	gpio_free(g_Settings[SW_PWM_CH].pin);
 }
 
@@ -395,7 +396,7 @@ static void hardware_pwm_init(void)
 	g_Settings[HW_PWM_CH].pin = DEFAULT_PWM_PIN;
 	g_Settings[HW_PWM_CH].frequency = DEFAULT_FREQ;
 	g_Settings[HW_PWM_CH].duty_cycle = 0;
-	g_Settings[HW_PWM_CH].enabled = TRUE;
+	g_Settings[HW_PWM_CH].enabled = TRUE; //todo
 
 	s_pGpioRegisters = (struct GpioRegisters*) __io_address(GP_BASE); //todo use stefan's gpio
 	s_PwmRegisters   = (struct PwmRegisters*)ioremap(PWM_BASE, sizeof(struct PwmRegisters));     
@@ -406,8 +407,8 @@ static void hardware_pwm_init(void)
 
 	configHardwarePwm();
 
-	//s_PwmRegisters->RNG1=counts;
-	//s_PwmRegisters->DAT1=0; //dutyCycle is set to zero
+	//s_PwmRegisters->RNG1=COUNTS;
+	s_PwmRegisters->DAT1=0; //dutyCycle is set to zero
 
 }
 

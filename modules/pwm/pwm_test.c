@@ -10,100 +10,15 @@ struct pwm_settings pwm0;
 struct pwm_settings pwm1;
 
 
-static void new_settings(void)
-{
-	pwm1.channel    = 1;
-	pwm1.pin        = 17;
-	pwm1.enabled    = 0; //was 1, changed it for testing enabled/disabled
-	pwm1.frequency  = 25000;
-	pwm1.duty_cycle = 0;
-
-	//we can only set duty_cycle for hardware pwm
-	//the rest of the settings are fixed for now
-	//hw pwm channel = 0
-	//hw pwm pin     = 18
-	//hw pwm freq    = 25000 Hz
-	//hw pwm is enabled by default and dutycyle is set to zero by default!!
-	pwm0.duty_cycle = 0;
-}
-
-
-static void simple_test(void)
-{
-	volatile int i;
-	for(i=0; i <= 100; i+=20)
-	{
-		pwm1.duty_cycle = i;
-		pwm_set_settings(&pwm1);
-		msleep(1000);
-	}
-
-	for(i=100; i >= 0; i-=20)
-	{
-		pwm1.duty_cycle = i;
-		pwm_set_settings(&pwm1);
-		msleep(1000);
-	}
-
-}
-
-static void simple_hw_test(void)
-{
-	volatile int i;
-	for(i=0; i <= 100; i+=20)
-	{
-		pwm0.duty_cycle = i;
-		pwm_set_settings(&pwm0);
-		msleep(1000);
-	}
-
-	for(i=100; i >= 0; i-=20)
-	{
-		pwm0.duty_cycle = i;
-		pwm_set_settings(&pwm0);
-		msleep(1000);
-	}
-}
-
 static int __init pwm_test_init(void)
 {
 	int i;
-	//new_settings();
-/*
-	pwm_set_settings(&pwm1);
-
-	for(i=0;i<2;i++)
-	{
-		simple_test();
-		simple_hw_test();
-	}
-
-	//test hw duty_cycle
-	msleep(1000);
-	pwm_set_duty_cycle(0,100);
-	msleep(2000);
-	pwm_set_duty_cycle(0,50);
-	msleep(2000);
-	pwm_set_duty_cycle(0,0);
-	msleep(2000);
-
-	//test sw duty cycle
-	pwm_set_duty_cycle(1,100);
-	msleep(2000);
-	pwm_set_duty_cycle(1,50);
-	msleep(2000);
-	pwm_set_duty_cycle(1,0);
-	msleep(2000);
-*/
-
-
+	
     pwm_get_settings(&pwm0);
 	pwm_get_settings(&pwm1);
 	msleep(10000);
-    //test hw+sw pwm enabled/disabled
-	//pwm_set_settings(&pwm0);
-	//pwm_set_settings(&pwm1);
-/*	pwm_set_duty_cycle(0,100);
+
+	pwm_set_duty_cycle(0,100);
 	pwm_set_duty_cycle(1,100);
 	
 	for(i=0;i<2;i++)
@@ -128,23 +43,27 @@ static int __init pwm_test_init(void)
 	pwm_set_frequency(0,25000);
 	pwm_set_frequency(1,25000);
 	
+	msleep(5000);
+	
+    pwm_set_duty_cycle(0,0);
+	pwm_set_duty_cycle(1,0);
+	msleep(5000);
     pwm_set_duty_cycle(0,25);
 	pwm_set_duty_cycle(1,25);
-	msleep(2000);
-	pwm_set_duty_cycle(1,50);
+	msleep(5000);
+	pwm_set_duty_cycle(0,50);
     pwm_set_duty_cycle(1,50);
-	msleep(2000);
+	msleep(5000);
 	pwm_set_duty_cycle(0,75);
 	pwm_set_duty_cycle(1,75);
-	msleep(2000);
+	msleep(5000);
     pwm_set_duty_cycle(0,100);
 	pwm_set_duty_cycle(1,100);
-	msleep(2000);
-*/
+	msleep(5000);
 
 
 
-	
+    //test hw+sw pwm frequency	
     pwm_set_duty_cycle(0,50);
     pwm_set_duty_cycle(1,50);
    
@@ -162,11 +81,6 @@ static int __init pwm_test_init(void)
 	msleep(5000);
 	pwm_set_frequency(0,25000);
 	pwm_set_frequency(1,25000);
-	
-
-	
-
-	
 	
 	
 	return 0;
