@@ -7,11 +7,8 @@
 #include <linux/hrtimer.h> 
 #include <linux/delay.h> 
 #include <asm/io.h>
-
 #include "pwm.h"
 #include "pwm_internal.h"
-
-//TODO: NO FLOATING POINT!!!!!
 
 static int g_Major = 0;
 static struct class* g_Class = NULL;
@@ -27,11 +24,9 @@ struct PwmRegisters    *s_PwmRegisters;
 struct ClockRegisters  *s_ClockRegisters;
 /* end of hardware pwm */
 
-
 int debug = 0;
 module_param(debug, int, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
-
 
 /* start of software pwm code*/
 struct hrtimer tm1, tm2;
@@ -68,7 +63,7 @@ enum hrtimer_restart cb2(struct hrtimer *t) {
 
 
 /* start of hardware pwm code */
-static void SetGPIOFunction(int GPIO, int functionCode)
+static void SetGPIOFunction(int GPIO, int functionCode) //todo remove this code and use gpio from stefan
 {
 	int registerIndex = GPIO / 10;
 	int bit = (GPIO % 10) * 3;
@@ -114,7 +109,6 @@ void configHardwarePwm(void)
 	udelay(10); 
 
 	s_PwmRegisters->RNG1 = COUNTS;
-	//s_PwmRegisters->DAT1 = 0; //dutycycle
 
 	// start PWM1 in
 	if(mode == PWMMODE) //PWM mode 
@@ -126,7 +120,6 @@ void configHardwarePwm(void)
 
 void update_hw_pwm_settings(void)
 {
-	//s_PwmRegisters->RNG1=COUNTS;
 	int dutyCycle = g_Settings[HW_PWM_CH].duty_cycle;
 	//int newCount = (COUNTS / 100) * dutyCycle;
 	int newCount = (((COUNTS * 1000) / 100) * dutyCycle) / 1000;
@@ -260,7 +253,6 @@ int pwm_set_frequency (int channel, int frequency)
 	if(channel == HW_PWM_CH)
 	{
 		//hw pwm
-		//update_hw_pwm_settings(); //todo for frequency
 		configHardwarePwm(); //TODO
 	}
 	if(channel == SW_PWM_CH)
@@ -323,7 +315,6 @@ static const struct file_operations pwm_fops = {
 
 
 //sysfs
-
 static ssize_t show_pwmx(struct device *dev, struct device_attribute *attr, char *buf, int chan)
 {
 	struct pwm_settings s;
@@ -338,7 +329,6 @@ static ssize_t show_pwmx(struct device *dev, struct device_attribute *attr, char
 		s.frequency,
 		s.duty_cycle);
 }
-
 
 static ssize_t show_pwm0(struct device *dev, struct device_attribute *attr, char *buf)
 {
@@ -358,12 +348,12 @@ static DEVICE_ATTR( pwm1, S_IWUSR | S_IRUGO, show_pwm1, NULL );
 static void software_pwm_init(void)
 {
 	unsigned long t_ns;
-	g_Settings[SW_PWM_CH].channel = SW_PWM_CH;
-	g_Settings[SW_PWM_CH].pin = DEFAULT_GPIO_OUTPUT; //TODO
-	g_Settings[SW_PWM_CH].frequency = DEFAULT_FREQ;
+	g_Settings[SW_PWM_CH].channel    = SW_PWM_CH;
+	g_Settings[SW_PWM_CH].pin        = DEFAULT_GPIO_OUTPUT;
+	g_Settings[SW_PWM_CH].frequency  = DEFAULT_FREQ;
 	g_Settings[SW_PWM_CH].duty_cycle = 0;
-	g_Settings[SW_PWM_CH].enabled = TRUE; //todo
-
+	g_Settings[SW_PWM_CH].enabled    = FALSE; 
+	
 	t_ns = (NANO_SEC)/DEFAULT_FREQ;
 	hrtimer_init(&tm1, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	hrtimer_init(&tm2, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
@@ -392,24 +382,22 @@ static void software_pwm_exit(void)
 
 static void hardware_pwm_init(void)
 { 
-	g_Settings[HW_PWM_CH].channel = HW_PWM_CH;
-	g_Settings[HW_PWM_CH].pin = DEFAULT_PWM_PIN;
-	g_Settings[HW_PWM_CH].frequency = DEFAULT_FREQ;
+	g_Settings[HW_PWM_CH].channel    = HW_PWM_CH;
+	g_Settings[HW_PWM_CH].pin        = DEFAULT_PWM_PIN;
+	g_Settings[HW_PWM_CH].frequency  = DEFAULT_FREQ;
 	g_Settings[HW_PWM_CH].duty_cycle = 0;
-	g_Settings[HW_PWM_CH].enabled = TRUE; //todo
+	g_Settings[HW_PWM_CH].enabled    = FALSE;
 
 	s_pGpioRegisters = (struct GpioRegisters*) __io_address(GP_BASE); //todo use stefan's gpio
 	s_PwmRegisters   = (struct PwmRegisters*)ioremap(PWM_BASE, sizeof(struct PwmRegisters));     
 	s_ClockRegisters = (struct ClockRegisters*)ioremap(CLOCK_BASE, sizeof(struct ClockRegisters)); 
 
 	SetGPIOFunction(DEFAULT_PWM_PIN, 0b000); //Configure the pin as input (default)
-	SetGPIOFunction(DEFAULT_PWM_PIN, 0b010);	//Configure the pin as pwm pin
+	SetGPIOFunction(DEFAULT_PWM_PIN, 0b010); //Configure the pin as pwm pin
 
 	configHardwarePwm();
 
-	//s_PwmRegisters->RNG1=COUNTS;
-	s_PwmRegisters->DAT1=0; //dutyCycle is set to zero
-
+	s_PwmRegisters->DAT1 = 0; //dutyCycle is set to zero
 }
 
 static void hardware_pwm_exit(void)

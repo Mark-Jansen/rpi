@@ -10,35 +10,33 @@ struct pwm_settings pwm0;
 struct pwm_settings pwm1;
 
 
-void initialize_pwm_settings()
+void showMenu( void )
 {
-	pwm0.channel    = 0;
-	pwm0.pin        = 18;
-	pwm0.enabled    = 0;
-	pwm0.frequency  = 0;
-	pwm0.duty_cycle = 0;
-
-	pwm1.channel    = 1;
-	pwm1.pin        = 17;
-	pwm1.enabled    = 0;
-	pwm1.frequency  = 0;
-	pwm1.duty_cycle = 0;
+printf("\n\nMENU");
+printf("\n===========================");
+printf("\n[1] Set software pwm pin");
+printf("\n[2] Select software pwm");
+printf("\n[3] Select hardware pwm");
+printf("\n[4] Stop");
+printf("\n\nKeuze : ");
+}
+void showFunctionMenu( void )
+{
+printf("\n\nMENU");
+printf("\n=============");
+printf("\n[1] Enabled pwm");
+printf("\n[2] Disable pwm");
+printf("\n[3] Set frequency");
+printf("\n[4] Set dutycycle");
+printf("\n[5] Stop");
+printf("\n\nKeuze : ");
 }
 
-void new_settings()
+void initialize_structs(void)
 {
-	pwm0.channel    = 0;
-	pwm0.pin        = 18;
-	pwm0.enabled    = 1;
-	pwm0.frequency  = 1000;
-	pwm0.duty_cycle = 80;
-
-	pwm1.channel    = 1;
-	pwm1.pin        = 17;
-	pwm1.enabled    = 1;
-	pwm1.frequency  = 20000;
-	pwm1.duty_cycle = 0;
-
+  /* we have to set the channels so the kernel module can distinguish between the hw and sw pwm */
+  pwm0.channel = 0;
+  pwm1.channel = 1;
 }
 
 void show_settings(struct pwm_settings *s)
@@ -73,7 +71,6 @@ int write( int fd, struct pwm_settings* settings)
 }
 
 
-
 int main()
 {
 
@@ -82,37 +79,56 @@ int main()
 		perror( "open" );
 		return 1;
 	}
-
-	initialize_pwm_settings();
-
+    
+	initialize_structs();
 	read(fd,&pwm0);
 	read(fd,&pwm1);
+    
+    printf("entering program\n");
+    usleep(1000000);
 
-	new_settings();
-
+	pwm0.enabled = 1;
+	pwm1.enabled = 1;
+	
+	//software pwm simple test
+	pwm0.duty_cycle = 0;
+	pwm1.duty_cycle = 0;
 	write(fd,&pwm0);
 	write(fd,&pwm1);
+	usleep(5000000);
 
-	//software pwm simple test
-	pwm1.duty_cycle = 0;
-	write(fd,&pwm1);
-	usleep(500000);
-
+	pwm0.duty_cycle = 25;
 	pwm1.duty_cycle = 25;
+	write(fd,&pwm0);
 	write(fd,&pwm1);
-	usleep(1000000);
+	usleep(5000000);
 
+	pwm0.duty_cycle = 50;
 	pwm1.duty_cycle = 50;
+	write(fd,&pwm0);
 	write(fd,&pwm1);
-	usleep(1000000);
+	usleep(5000000);
 
+    pwm0.duty_cycle = 75;
 	pwm1.duty_cycle = 75;
+	write(fd,&pwm0);
 	write(fd,&pwm1);
-	usleep(1000000);
+	usleep(5000000);
 
+	pwm0.duty_cycle = 100;
 	pwm1.duty_cycle = 100;
+	write(fd,&pwm0);
 	write(fd,&pwm1);
-	usleep(1000000);
-
+	usleep(5000000);
+     
+	pwm0.duty_cycle = 0;
+	pwm1.duty_cycle = 0;
+    pwm0.enabled = 0;
+	pwm1.enabled = 0;
+	write(fd,&pwm0);
+	write(fd,&pwm1);
+	usleep(5000000);
+ 
+	 
 	close( fd );
 }

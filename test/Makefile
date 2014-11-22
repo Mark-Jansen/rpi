@@ -14,6 +14,7 @@ CROSS_COMPILE:=$(L_BUILDROOT)/output/host/usr/bin/arm-linux-
 all:
 	$(CROSS_COMPILE)g++ test.cpp -o test -I../modules
 	$(CROSS_COMPILE)g++ testpwm.cpp -o testpwm -I../modules
+
 clean:
-	rm -rf *.o test testpwm
+	rm -rf *.o test testpwm 
 
