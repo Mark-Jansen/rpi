@@ -40,7 +40,7 @@
 double frequency        = 25000.0;// PWM frequency
 double dutyCycle        = 0;      // PWM duty Cycle (%)
 unsigned int counts     = 256;    // PWM resolution
-unsigned int divisor    = 3;      // divisor value
+//unsigned int divisor    = 3;      // divisor value
 int mode = PWMMODE;               // PWM mode
 
 //todo use gpio from stefan!!

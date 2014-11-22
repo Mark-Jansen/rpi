@@ -84,8 +84,10 @@ static void SetGPIOFunction(int GPIO, int functionCode)
 
 void configHardwarePwm(void)
 {
-	//double period;
-	//double countDuration;
+    const int scaleFactor = 100000;
+	int period;
+	int countDuration;
+	int divisor;
 
 	// stop clock and waiting for busy flag doesn't work, so kill clock
 	s_ClockRegisters->PWMCTL = 0x5A000000 | (1 << 5);
@@ -95,14 +97,13 @@ void configHardwarePwm(void)
 	while (s_ClockRegisters->PWMCTL & 0x00000080){}   
 
 	//calculate divisor value for PWM1 clock...base frequency is 19.2MHz
-	//period = 1.0 / g_Settings[HW_PWM_CH].frequency;
-	//countDuration = period / (counts * 1.0f);
-	//divisor = (int)(19200000.0f / (1.0 / countDuration));
-
-	//if( this->divisor < 0 || this->divisor > 4095 ) {
-	//	printf("divisor value must be between 0-4095\n");
-	//	exit(-1);
-	//}
+	period = (1 * scaleFactor) /  g_Settings[HW_PWM_CH].frequency;
+	countDuration = period * scaleFactor / (counts);
+	divisor = 19200000 / ( scaleFactor / countDuration);
+	divisor = divisor / scaleFactor;
+	trace("calculated divisor= %d",divisor);
+	//TODO
+	
 
 	//set divisor
 	s_ClockRegisters->CLKDIV = 0x5A000000 | divisor << 12;
@@ -116,7 +117,7 @@ void configHardwarePwm(void)
 	// needs some time until the PWM module gets disabled, without the delay the PWM module crashs
 	udelay(10); 
 
-	//s_PwmRegisters->RNG1 = counts;
+	s_PwmRegisters->RNG1 = counts;
 	//s_PwmRegisters->DAT1 = 0; //dutycycle
 
 	// start PWM1 in
@@ -131,7 +132,9 @@ void update_hw_pwm_settings(void)
 {
 	//s_PwmRegisters->RNG1=counts;
 	int dutyCycle = g_Settings[HW_PWM_CH].duty_cycle;
-	int newCount = (counts / 100) * dutyCycle;
+	//int newCount = (counts / 100) * dutyCycle;
+	int newCount = (((counts * 1000) / 100) * dutyCycle) / 1000;
+	trace("newCount = %d",newCount);
 	s_PwmRegisters->DAT1=newCount;
 }
 /* end of hardware pwm code */
@@ -257,7 +260,8 @@ int pwm_set_frequency (int channel, int frequency)
 	if(channel == HW_PWM_CH)
 	{
 		//hw pwm
-		update_hw_pwm_settings(); //todo for frequency
+		//update_hw_pwm_settings(); //todo for frequency
+		configHardwarePwm(); //TODO
 	}
 	if(channel == SW_PWM_CH)
 	{
@@ -395,17 +399,15 @@ static void hardware_pwm_init(void)
 
 	s_pGpioRegisters = (struct GpioRegisters*) __io_address(GP_BASE); //todo use stefan's gpio
 	s_PwmRegisters   = (struct PwmRegisters*)ioremap(PWM_BASE, sizeof(struct PwmRegisters));     
-	//s_PwmRegisters   = (uint32_t *)ioremap(PWM_BASE, sizeof(struct PwmRegisters));      //TODO incompatible pointer type error
 	s_ClockRegisters = (struct ClockRegisters*)ioremap(CLOCK_BASE, sizeof(struct ClockRegisters)); 
-	//s_ClockRegisters = (uint32_t *)ioremap(CLOCK_BASE, sizeof(struct ClockRegisters));  //TODO incompatible pointer type error
 
 	SetGPIOFunction(DEFAULT_PWM_PIN, 0b000); //Configure the pin as input (default)
 	SetGPIOFunction(DEFAULT_PWM_PIN, 0b010);	//Configure the pin as pwm pin
 
 	configHardwarePwm();
 
-	s_PwmRegisters->RNG1=counts;
-	s_PwmRegisters->DAT1=0; //dutyCycle is set to zero
+	//s_PwmRegisters->RNG1=counts;
+	//s_PwmRegisters->DAT1=0; //dutyCycle is set to zero
 
 }
 
