@@ -50,7 +50,7 @@ static ssize_t gyro_data_show(struct device *dev, struct device_attribute *attr,
 	if( gyro_get_data( &data ) )
 		return snprintf( buf, PAGE_SIZE, "Failed to read the data\n" );
 	temp = data.raw_temperature / 34 + 365;
-	return snprintf( buf, PAGE_SIZE, "Accell: %d, %d, %d\nTemp(approx): %d.%d\nGyro: %d, %d, %d\n",
+	return snprintf( buf, PAGE_SIZE, "Accel: %d, %d, %d\nTemp(approx): %d.%d\nGyro: %d, %d, %d\n",
 			data.accel_x, data.accel_y, data.accel_z, temp / 10, temp % 10,
 			data.gyro_x, data.gyro_y, data.gyro_z );
 }
