@@ -1,6 +1,7 @@
 #ifndef PWM_H
 #define PWM_H
 
+/* always initialize channel to 0 or 1, before changing any other setting */
 struct pwm_settings {
 	int  channel;				//channel 0 or 1 (channel 0 is hw_pwm / channel 1 is soft_pwm)  
 	int  pin;                   //hardware pwm is on gpio18 (pin 12) and cannot be changed!, software pwm pin can be changed.   

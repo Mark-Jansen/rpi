@@ -32,6 +32,7 @@ MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
 struct hrtimer tm1, tm2;
 static ktime_t t1;
 
+/* rising edge of software pwm */
 enum hrtimer_restart cb1(struct hrtimer *t) {
 	ktime_t now;
 	int ovr;
@@ -52,7 +53,7 @@ enum hrtimer_restart cb1(struct hrtimer *t) {
 	return HRTIMER_RESTART;
 }
 
-
+/* falling edge of software pwm */
 enum hrtimer_restart cb2(struct hrtimer *t) {
 
 	gpio_set_value(g_Settings[SW_PWM_CH].pin, 0);
@@ -76,62 +77,60 @@ static void SetGPIOFunction(int GPIO, int functionCode) //todo remove this code 
 
 void configHardwarePwm(void)
 {
-    const int scaleFactor = 100000;
+	const int scaleFactor = 100000;
 	int period;
 	int countDuration;
 	int divisor;
 
-	// stop clock and waiting for busy flag doesn't work, so kill clock
+	//stop clock and waiting for busy flag doesn't work, so kill clock
 	s_ClockRegisters->PWMCTL = 0x5A000000 | (1 << 5);
 	udelay(10);  
 
-	// wait until busy flag is set 
+	//wait until busy flag is set 
 	while (s_ClockRegisters->PWMCTL & 0x00000080){}   
 
-	//calculate divisor value for PWM1 clock...base frequency is 19.2MHz
+	//calculate divisor value for PWM1 clock...base frequency is 19.2MHz, use scaleFactor to get more accurate result because we can't use floating point in a kernel module
 	period = (1 * scaleFactor) /  g_Settings[HW_PWM_CH].frequency;
 	countDuration = period * scaleFactor / (COUNTS);
 	divisor = 19200000 / ( scaleFactor / countDuration);
 	divisor = divisor / scaleFactor;
 	trace("calculated divisor= %d",divisor);
-	//TODO
 
 	//set divisor
 	s_ClockRegisters->CLKDIV = 0x5A000000 | divisor << 12;
 
-	// source=osc and enable clock
+	//source=osc and enable clock
 	s_ClockRegisters->PWMCTL = 0x5A000011;
 
-	// disable PWM & start from a clean slate
+	//disable PWM & start from a clean slate
 	s_PwmRegisters->CTL = 0;
 
-	// needs some time until the PWM module gets disabled, without the delay the PWM module crashs
+	// needs some time until the PWM module gets disabled, without the delay the PWM module crashes
 	udelay(10); 
 
-	s_PwmRegisters->RNG1 = COUNTS;
-     
+	s_PwmRegisters->RNG1 = COUNTS; //pwm resolution (counts == 256 -> 8bit pwm)
+
 	if(g_Settings[HW_PWM_CH].enabled == TRUE) 
 	{
-	  // start PWM1 in
-	  if(mode == PWMMODE) //PWM mode 
-		  s_PwmRegisters->CTL |= (1 << 0); 
-	  else // M/S Mode
-		  s_PwmRegisters->CTL |= ((1 << 7) | (1 << 0));
-    }
+		// start PWM1 in
+		if(mode == PWMMODE) //PWM mode 
+			s_PwmRegisters->CTL |= (1 << 0); 
+		else // M/S Mode
+			s_PwmRegisters->CTL |= ((1 << 7) | (1 << 0));
+	}
 	else
 	{
-	  s_PwmRegisters->CTL = 0;  /* turn pwm off */
+		s_PwmRegisters->CTL = 0;  /* turn pwm off */
 	}
 }
 
 
-void update_hw_pwm_settings(void)
+void update_duty_cycle(void)
 {
 	int dutyCycle = g_Settings[HW_PWM_CH].duty_cycle;
-	//int newCount = (COUNTS / 100) * dutyCycle;
 	int newCount = (((COUNTS * 1000) / 100) * dutyCycle) / 1000;
 	trace("newCount = %d",newCount);
-	s_PwmRegisters->DAT1=newCount;
+	s_PwmRegisters->DAT1=newCount; //new dutyCycle
 }
 /* end of hardware pwm code */
 
@@ -157,17 +156,18 @@ int pwm_set_settings(struct pwm_settings* arg)
 	unsigned long flags;
 	trace("");
 	spin_lock_irqsave( &g_Lock, flags );
-	
+
+	//changes to software pwm
 	if(arg->channel == SW_PWM_CH)
 	{
-	  if (g_Settings[SW_PWM_CH].pin != arg->pin)
-	  {
-	    gpio_set_value(g_Settings[SW_PWM_CH].pin, 0);
-        gpio_free(g_Settings[SW_PWM_CH].pin);	
-		
-		gpio_request(arg->pin, "soft_pwm_gpio");
-        gpio_direction_output(arg->pin, 1);
-	  }
+		if (g_Settings[SW_PWM_CH].pin != arg->pin) //is the software pwm pin has changed
+		{
+			gpio_set_value(g_Settings[SW_PWM_CH].pin, 0); 
+			gpio_free(g_Settings[SW_PWM_CH].pin);	 //free old gpio pin
+
+			gpio_request(arg->pin, "soft_pwm_gpio"); //setup new gpio pin
+			gpio_direction_output(arg->pin, 1);
+		}
 	}
 	g_Settings[arg->channel].channel    = arg->channel;
 	g_Settings[arg->channel].pin        = arg->pin;
@@ -176,14 +176,9 @@ int pwm_set_settings(struct pwm_settings* arg)
 	g_Settings[arg->channel].enabled    = arg->enabled;
 	if(arg->channel == HW_PWM_CH) 
 	{ 
-	  update_hw_pwm_settings(); //todo
-	  configHardwarePwm();
+		update_duty_cycle(); 
+		configHardwarePwm(); // update all pwm settings
 	}
-	
-	
-	
-	
-	
 	spin_unlock_irqrestore( &g_Lock, flags );
 	return 0;
 }
@@ -243,7 +238,7 @@ int pwm_set_duty_cycle(int channel, int duty_cycle)
 	if(channel == HW_PWM_CH)
 	{
 		//hw pwm
-		update_hw_pwm_settings();
+		update_duty_cycle();
 	}
 	if(channel == SW_PWM_CH)
 	{
@@ -377,7 +372,7 @@ static void software_pwm_init(void)
 	g_Settings[SW_PWM_CH].frequency  = DEFAULT_FREQ;
 	g_Settings[SW_PWM_CH].duty_cycle = 0;
 	g_Settings[SW_PWM_CH].enabled    = FALSE; 
-	
+
 	t_ns = (NANO_SEC)/DEFAULT_FREQ;
 	hrtimer_init(&tm1, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	hrtimer_init(&tm2, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
@@ -426,7 +421,7 @@ static void hardware_pwm_init(void)
 
 static void hardware_pwm_exit(void)
 {
-	SetGPIOFunction(DEFAULT_PWM_PIN, 0);	//Configure the pin as input 
+	SetGPIOFunction(DEFAULT_PWM_PIN, 0); //Configure the pin as input 
 }
 
 
