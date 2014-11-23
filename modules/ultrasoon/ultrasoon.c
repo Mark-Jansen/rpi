@@ -22,7 +22,6 @@ static int g_Major = 0;
 static struct class* g_Class = NULL;
 static struct device* g_Device = NULL;
 
-static DEFINE_SPINLOCK(g_Lock);
 struct gpio_status trigger_port;
 struct gpio_status echo_port;
 
@@ -71,55 +70,20 @@ EXPORT_SYMBOL(ultrasoon_get_config);
 
 int ultrasoon_measure_distance(struct ultrasoon_config* cfg,struct ultrasoon_data* result)
 {
-	unsigned long flags;
-	int returnValue = 0;	
-	// make gpio_status struct and set values
-	trigger_port.pinNr = 23;
-	trigger_port.value = 0;
-	trigger_port.function = OUTPUT;
-
-	trace("");
-	spin_lock_irqsave( &g_Lock, flags );
+	unsigned long GPIO_TIMEOUT_SEC 	= 5; //== 0.5ec // 0 == OFF
+	long int time_difference		= 0;
 	
-	// use gpio.c
-	returnValue = gpio_set_config(&trigger_port);
+	struct timespec timeout_start	= {0};
+	struct timespec start_timeVal   = {0};
+	struct timespec end_timeVal	 	= {0};
 
-	spin_unlock_irqrestore( &g_Lock, flags );
-
+	trigger_port.pinNr 		= cfg->pinNr_Trigger;
+	trigger_port.value 		= LOW;
+	trigger_port.function  	= OUTPUT;
+	result->distance 		= -1;
 	
-	// make gpio_status struct and set values
-	trigger_port.pinNr = 23;
-	trigger_port.value = 1;
-	trigger_port.function = OUTPUT;
-
-	trace("");
-	spin_lock_irqsave( &g_Lock, flags );
-	
-	// use gpio.c
-	returnValue = gpio_write(&trigger_port);
-	
-	spin_unlock_irqrestore( &g_Lock, flags );
-
-
-	/*
-	unsigned long flags;
-	unsigned long GPIO_TIMEOUT_SEC = 0; // 3000000000 == 3 sec // 0 == OFF
-	long int time_difference	= 0;
-	
-	struct timespec timeout_start;
-	struct timespec start_timeVal;
-	struct timespec end_timeVal;
-	
-	struct gpio_status trigger_port;
-	struct gpio_status echo_port;
-
-	trigger_port.pinNr 	= cfg->pinNr_Trigger;
-	trigger_port.value = 0;
-	trigger_port.function  = OUTPUT;
-	result->distance = -1;
-	
-	//if (result->type == FRONT_SENSOR)
-	if(result->type == 0)
+	//SET GPIO VOLGENS DE CFG CONFIG
+	if(result->type == FRONT_SENSOR)
 	{
 		echo_port.pinNr	= cfg->pinNr_echo_1;
 	}
@@ -127,77 +91,82 @@ int ultrasoon_measure_distance(struct ultrasoon_config* cfg,struct ultrasoon_dat
 	{
 		echo_port.pinNr	= cfg->pinNr_echo_2;
 	}
-
-	echo_port.function	= INPUT;
 	
-	//SET GPIO VOLGENS DE CFG CONFIG
+	echo_port.function	= INPUT;
+	echo_port.value 	= LOW;
+	
 	gpio_set_config(&trigger_port);
 	gpio_set_config(&echo_port);
 	
 //DEBUG!!
 if(debug)
 {
+	printk(KERN_INFO "3 sec niks doen kijken of set config GPIO output aanpast\n");
+	msleep(3000);
 	printk(KERN_INFO "SET CONFIG:\nTrigger_port: %d \n",trigger_port.pinNr);
-	printk(KERN_INFO "SET CONFIG:\nEchoPort: %d \n",echo_port.pinNr);
+	printk(KERN_INFO "EchoPort: %d \n",echo_port.pinNr);
 }
 	
-	spin_lock_irqsave( &g_Lock, flags );
-	
 	if(gpio_write(&trigger_port) != 0)
 		printk(KERN_INFO "ERROR from GPIO_WRITE Line: %d \n",__LINE__);
 		
-	spin_unlock_irqrestore( &g_Lock, flags );	
-
 	//SET SLEEP FOR 0,5sec to let the sensor settel
-	//msleep(500);
-	//SEND PULS FOR 10 micro sec.
-	trigger_port.value = 1;
+	if(debug)
+	printk(KERN_INFO "SET SLEEP FOR 1sec to let the sensor settel \n");	
 	
-	spin_lock_irqsave( &g_Lock, flags );
-		
-	if(gpio_write(&trigger_port) != 0)
-		printk(KERN_INFO "ERROR from GPIO_WRITE Line: %d \n",__LINE__);
-		
-	spin_unlock_irqrestore( &g_Lock, flags );	
-			
-//	msleep(2000);// nu tijdelijk 2 sec ipv 0.1 op GPIO te testen
-	trigger_port.value = 1;
+	msleep(1000);
+	if(debug)
+	printk(KERN_INFO "SET SLEEP FOR 1sec is voorbij\n");	
 	
-	if(gpio_write(&trigger_port) != 0)
-		printk(KERN_INFO "ERROR from GPIO_WRITE Line: %d \n",__LINE__);
-		
-	//Set timmers timeout 
+	//Set timmers timeout of indien 0 zetten timeout uit
 	if( GPIO_TIMEOUT_SEC > 0)
 	{
+		GPIO_TIMEOUT_SEC = GPIO_TIMEOUT_SEC * 10000000;
 		timeout_start = current_kernel_time();
 		timeout_start.tv_nsec += GPIO_TIMEOUT_SEC;
 	}
 	
-	if(debug)
+//DEBUG!!
+if(debug)
+{
+	if(GPIO_TIMEOUT_SEC > 0)
 	{
-		if(GPIO_TIMEOUT_SEC > 0)
-			printk(KERN_INFO "Timeout value: %lu\n",GPIO_TIMEOUT_SEC);	
-		else
-			printk(KERN_INFO "Timeout niet ingeshakeld\n");	
+		start_timeVal = current_kernel_time();
+		printk(KERN_INFO "Current time: %lu\n",start_timeVal.tv_nsec);	
+		printk(KERN_INFO "Timeout time: %lu\n",timeout_start.tv_nsec);	
 	}
+}
 	
-
+	trigger_port.value = HIGH;
+	if(gpio_write(&trigger_port) != 0)
+		printk(KERN_INFO "ERROR from GPIO_WRITE Line: %d \n",__LINE__);
+					
+	msleep(0.01);
+	trigger_port.value = LOW;
+	
+	if(gpio_write(&trigger_port) != 0)
+	printk(KERN_INFO "ERROR from GPIO_WRITE Line: %d \n",__LINE__);
+	
 	while(echo_port.value == 0)
 	{
 		if(gpio_read(&echo_port))
 		{
 			printk(KERN_INFO "ERROR from GPIO_WRITE Line: %d \n",__LINE__);
 		}
-				
+			
 		start_timeVal = current_kernel_time();
 		
+		//TBV timeout
 		if(start_timeVal.tv_nsec > timeout_start.tv_nsec && GPIO_TIMEOUT_SEC > 0 )
 		{
-			printk(KERN_INFO "GPIO TIME OUT @ Line: %d \nstart_timeVal was: %lu",__LINE__,start_timeVal.tv_nsec);
+			printk(KERN_INFO "GPIO TIME OUT @ Line: %d \nstart_timeVal was: %lu\n",__LINE__,start_timeVal.tv_nsec);
+			printk(KERN_INFO "Timeout time is: %lu",timeout_start.tv_nsec);
+			start_timeVal = current_kernel_time();
+			printk(KERN_INFO "GPIO TIME OUT @ Line: %d \nstart_timeVal was: %lu\n",__LINE__,start_timeVal.tv_nsec);
 			return 0;
 		}
 	}
-	
+		
 	while(echo_port.value != 0)
 	{
 		if(gpio_read(&echo_port))
@@ -207,34 +176,38 @@ if(debug)
 			
 		end_timeVal = current_kernel_time();
 		
+		//TBV timeout
 		if(start_timeVal.tv_nsec > timeout_start.tv_nsec && GPIO_TIMEOUT_SEC > 0)
 		{
-			printk(KERN_INFO "GPIO TIME OUT @ Line: %d / start_timeVal was: %lu",__LINE__,start_timeVal.tv_nsec);
+			printk(KERN_INFO "GPIO TIME OUT @ Line: %d / start_timeVal was: %lu\n",__LINE__,start_timeVal.tv_nsec);
+			printk(KERN_INFO "Timeout time is: %lu",timeout_start.tv_nsec);
 			return 0;
 		}
 	}
-	
+
 	time_difference = end_timeVal.tv_nsec - start_timeVal.tv_nsec;
-	time_difference = time_difference / 1000000;	//maak van nano mili seconden
 	
-	if(debug)
+//DEBUG!!	
+if(debug)
+{
+	printk(KERN_INFO "start_timeVal value: %lu\n",start_timeVal.tv_nsec);
+	printk(KERN_INFO "end_timeVal value: %lu\n",end_timeVal.tv_nsec);
+	printk(KERN_INFO "time_difference value: %lu\n",time_difference);
+	
+	if(start_timeVal.tv_nsec > end_timeVal.tv_nsec)
 	{
-		printk(KERN_INFO "start_timeVal value: %lu\n",start_timeVal.tv_nsec);
-		printk(KERN_INFO "end_timeVal value: %lu\n",end_timeVal.tv_nsec);
-		printk(KERN_INFO "time_difference value: %lu\n",time_difference);
-		
-		if(start_timeVal.tv_nsec > end_timeVal.tv_nsec)
-		{
-			printk(KERN_INFO "WHAAAAAAAAAAAAAAAAA dit mag niet!!!\n");
-		}
+		printk(KERN_INFO "WHAAAAAAAAAAAAAAAAA dit mag nooit!!!\n");
 	}
-	
+}
+
+	time_difference = time_difference / 1000000;	//maak van nano mili seconden
 	time_difference = time_difference * 17150;
 	result->distance = time_difference / 1000; //maak hele cm van
 	
-	if(debug)
-	printk(KERN_INFO "distance value: %d\n",result->distance);
-	*/
+//DEBUG!!
+if(debug)
+printk(KERN_INFO "distance value: %d\n",result->distance);
+	
 	return 0;
 }
 

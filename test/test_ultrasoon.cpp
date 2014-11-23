@@ -4,17 +4,24 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include <ultrasoon_driver/ultrasoon.h>
+#include "../modules/ultrasoon/ultrasoon.h" 
 
 
 int read( int fd, struct ultrasoon_data* data )
 {
+	char frontSensor[6] = {'F', 'r', 'o', 'n', 't', '\0'};
+	char backSensor[5] = {'B', 'a', 'c', 'k', '\0'};
+	
 	if( ioctl(fd, ULTRASOON_GET_DISTANCE, data ) == -1) {
 		perror( "ioctl get" );
 		close( fd );
 		return -1;
 	}
-	printf( "Distance from sensor type: %d = %d cm\n",data->type, data->distance );
+	if(data->type <= 0)
+		printf( "Distance from %s sensor: %d cm\n",frontSensor, data->distance );
+	else
+		printf( "Distance from %s sensor: %d cm\n",backSensor, data->distance );
+	
 	return 0;
 }
 
@@ -43,10 +50,18 @@ int write( int fd, struct ultrasoon_config* cfg)
 }
 
 
-int main()
+int main(int arc, char **argv)
 {
 	ultrasoon_data data;
 	ultrasoon_config cfg;
+	
+	data.distance = 0;
+	data.type = 0;
+	
+	if(arc > 1)
+	{
+		data.type = 1;
+	}
 	
 	int fd = open("/dev/ultrasoon", O_RDWR);
 	if (fd == -1) {
@@ -54,8 +69,7 @@ int main()
 		return 1;
 	}
 	
-	data.distance = 0;
-	data.type = 0;
+
 	if( read( fd, &data ) ) {
 		return 2;
 	}

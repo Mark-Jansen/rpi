@@ -12,8 +12,10 @@ struct ultrasoon_config{
 	int pinNr_echo_2;
 };
 
-#define FRONT_SENSOR			0;
-#define BACK_SENSOR				1;
+#define FRONT_SENSOR			0
+#define BACK_SENSOR				1
+#define	HIGH					1
+#define LOW						0
 
 #define THERMIOC_MAGIC_ULTRA	'E'
 #define ULTRASOON_GET_DISTANCE	_IOR(THERMIOC_MAGIC_ULTRA, 0, struct ultrasoon_data) 	

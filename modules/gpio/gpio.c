@@ -9,7 +9,8 @@
 // ==== History   : Version 1.00                                                ====
 // ====             								                            ====
 // ====                     							                        ====
-// ====                                                                         ====
+// ====                             
+                                            ====
 // =================================================================================
 
 // =================================================================================
@@ -81,7 +82,7 @@ int gpio_set_config(struct gpio_status* arg)
 	bit = (arg->pinNr % 10) * 3	;							// juist pin ivm 3 bits per pin voor functie
 	mask1 = 0b111 << bit;									// mask voor 3 bits van het juiste pinNr
 	mask2 = oldRegister & ~mask1;							// forceer de 3 bits van gekozen pinNr op 0
-	mask3 = (arg->value << bit) & mask1;					// mask voor het setten van de juiste waarde op pin nr
+	mask3 = (arg->function << bit) & mask1;					// mask voor het setten van de juiste waarde op pin nr
 	mask4 = mask2 | mask3;									// zet de overige bits weer in de oorspronkelijke stond terug
 	gpioRegister->GPFSEL[registerIndex] = mask4;			// geef gekozen pinNr juist waarde	
 		
