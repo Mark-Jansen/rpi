@@ -6,8 +6,8 @@
 #include <linux/delay.h>
 #include <linux/time.h>
 
-#define DRV_NAME		"ultrasoon"
-#define DRV_REV			"r1"
+#define DRV_NAME			"ultrasoon"
+#define DRV_REV				"r1"
 #define ultrasoon_MAJOR		249
 
 #include "../gpio/gpio.h"
@@ -22,19 +22,25 @@ static int g_Major = 0;
 static struct class* g_Class = NULL;
 static struct device* g_Device = NULL;
 
+// spinlock used to protect the global config
+static DEFINE_SPINLOCK(g_Lock);
+static struct ultrasoon_config g_Config = {
+	.pinNr_Trigger = 23,
+	.pinNr_echo_1 = 24,
+	.pinNr_echo_2 = 25
+};
+
+
 struct gpio_status trigger_port;
 struct gpio_status echo_port;
 
-//DEBUG!!
 static int debug = 1;
 
 module_param(debug, int, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
 
-int ultrasoon_set_config(struct ultrasoon_config* arg)
+int ultrasoon_set_config(struct ultrasoon_config* cfg)
 {
-	trace("");
-	/*
 	unsigned long flags;
 	trace("");
 	spin_lock_irqsave( &g_Lock, flags );
@@ -42,7 +48,6 @@ int ultrasoon_set_config(struct ultrasoon_config* arg)
 	g_Config.pinNr_echo_1 = cfg->pinNr_echo_1;
 	g_Config.pinNr_echo_2 = cfg->pinNr_echo_2;
 	spin_unlock_irqrestore( &g_Lock, flags );
-	*/
 	return 0;
 }
 EXPORT_SYMBOL(ultrasoon_set_config);
@@ -50,12 +55,6 @@ EXPORT_SYMBOL(ultrasoon_set_config);
 
 int ultrasoon_get_config(struct ultrasoon_config* cfg)
 {
-	//debug
-	cfg->pinNr_Trigger = 23;
-	cfg->pinNr_echo_1 = 24;
-	cfg->pinNr_echo_2 = 25;
-
-/*
 	unsigned long flags;
 	trace("");
 	spin_lock_irqsave( &g_Lock, flags );
@@ -63,7 +62,6 @@ int ultrasoon_get_config(struct ultrasoon_config* cfg)
 	cfg->pinNr_echo_1 = g_Config.pinNr_echo_1;
 	cfg->pinNr_echo_2 = g_Config.pinNr_echo_2;
 	spin_unlock_irqrestore( &g_Lock, flags );
-	*/
 	return 0;
 }
 EXPORT_SYMBOL(ultrasoon_get_config);

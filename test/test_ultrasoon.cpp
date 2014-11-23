@@ -36,16 +36,16 @@ int readConfig( int fd, struct ultrasoon_config* cfg )
 	return 0;
 }
 
-int write( int fd, struct ultrasoon_config* cfg)
+int writeConfig( int fd, struct ultrasoon_config* cfg)
 {
-	printf( "OLD DATA:\nTrigger_port: %d\nEcho_port1: %d\nEcho_port2: %d\n", cfg->pinNr_Trigger, cfg->pinNr_echo_1,cfg->pinNr_echo_2);
+	printf( "OLD config:\nTrigger_port: %d\nEcho_port1: %d\nEcho_port2: %d\n", cfg->pinNr_Trigger, cfg->pinNr_echo_1,cfg->pinNr_echo_2);
 	if( ioctl(fd, ULTRASOON_SET_CONFIG, cfg) == -1) {
 		perror( "ioctl set" );
 		close( fd );
 		return -1;
 	}
 	
-	printf( "NEW DATA:\nTrigger_port: %d\nEcho_port1: %d\nEcho_port2: %d\n", cfg->pinNr_Trigger, cfg->pinNr_echo_1,cfg->pinNr_echo_2);
+	printf( "NEW config:\nTrigger_port: %d\nEcho_port1: %d\nEcho_port2: %d\n", cfg->pinNr_Trigger, cfg->pinNr_echo_1,cfg->pinNr_echo_2);
 	return 0;
 }
 
@@ -69,7 +69,6 @@ int main(int arc, char **argv)
 		return 1;
 	}
 	
-
 	if( read( fd, &data ) ) {
 		return 2;
 	}
@@ -79,7 +78,7 @@ int main(int arc, char **argv)
 	}
 	
 	cfg.pinNr_echo_1 = 25;
-	if( write( fd, &cfg ) ) {
+	if( writeConfig( fd, &cfg ) ) {
 		return 4;
 	}
 	
