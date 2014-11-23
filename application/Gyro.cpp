@@ -1,6 +1,7 @@
 #include "Gyro.h"
 #include <gyro/gyro.h>
 #include <cmath>
+#include <fcntl.h>
 #include <iostream>
 #include <iomanip>
 

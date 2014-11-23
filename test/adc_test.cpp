@@ -1,13 +1,6 @@
 #include <stdio.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <fcntl.h>
-#include <unistd.h>
-
+#include <generic/File.h>
 #include <adc/adc.h>
-#include <string>
-#include "../application/File.h"
-
 
 bool read( File& adc, adc_data& data )
 {
