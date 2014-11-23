@@ -45,7 +45,6 @@ static int g_Major = 0;
 static struct class* g_Class = NULL;
 static struct device* g_Device = NULL;
 
-static DEFINE_SPINLOCK(g_Lock);
 struct gpio_status led;
 
 static int debug = 0;
@@ -60,6 +59,7 @@ MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
 // =================================================================================
 int led_set_config(struct led_status* status)
 {
+	int returnValue = 0;
 	// make gpio_status struct and set values
 	led.pinNr = status->pinNr;
 	led.value = status->value;
@@ -82,6 +82,7 @@ EXPORT_SYMBOL(led_set_config);
 // =================================================================================
 int led_on(struct led_status* status)
 {
+	int returnValue = 0;
 	// make gpio_status struct and set values
 	led.pinNr = status->pinNr;
 	led.value = ON;
@@ -104,6 +105,7 @@ EXPORT_SYMBOL(led_on);
 // =================================================================================
 int led_off(struct led_status* status)
 {
+	int returnValue = 0;
 	// make gpio_status struct and set values
 	led.pinNr = status->pinNr;
 	led.value = OFF;
