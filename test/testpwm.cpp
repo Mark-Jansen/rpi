@@ -3,8 +3,11 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <math.h>
+#include <iostream>
+
 #include <pwm/pwm.h>
+
+using namespace std;
 
 struct pwm_settings pwm0;
 struct pwm_settings pwm1;
@@ -12,31 +15,31 @@ struct pwm_settings pwm1;
 
 void showMenu( void )
 {
-printf("\n\nMENU");
-printf("\n===========================");
-printf("\n[1] Set software pwm pin");
-printf("\n[2] Select software pwm");
-printf("\n[3] Select hardware pwm");
-printf("\n[4] Stop");
-printf("\n\nKeuze : ");
+	printf("\n\nMENU");
+	printf("\n===========================");
+	printf("\n[1] Set software pwm pin");
+	printf("\n[2] Select software pwm");
+	printf("\n[3] Select hardware pwm");
+	printf("\n[4] Stop");
+	printf("\n\nKeuze : ");
 }
 void showFunctionMenu( void )
 {
-printf("\n\nMENU");
-printf("\n=============");
-printf("\n[1] Enabled pwm");
-printf("\n[2] Disable pwm");
-printf("\n[3] Set frequency");
-printf("\n[4] Set dutycycle");
-printf("\n[5] Stop");
-printf("\n\nKeuze : ");
+	printf("\n\nMENU");
+	printf("\n=============");
+	printf("\n[1] Enable pwm");
+	printf("\n[2] Disable pwm");
+	printf("\n[3] Set frequency");
+	printf("\n[4] Set dutycycle");
+	printf("\n[5] Stop");
+	printf("\n\nKeuze : ");
 }
 
 void initialize_structs(void)
 {
-  /* we have to set the channels so the kernel module can distinguish between the hw and sw pwm */
-  pwm0.channel = 0;
-  pwm1.channel = 1;
+	/* we have to set the channels so the kernel module can distinguish between the hw and sw pwm */
+	pwm0.channel = 0;
+	pwm1.channel = 1;
 }
 
 void show_settings(struct pwm_settings *s)
@@ -72,63 +75,119 @@ int write( int fd, struct pwm_settings* settings)
 
 
 int main()
-{
-
+{ 
+	bool close_menu = false;
+	char choice = 0;
+	char function = 0;
+	int pinnr;
+	int frequency, dutycycle;
 	int fd = open("/dev/pwm", O_RDWR);
 	if (fd == -1) {
 		perror( "open" );
 		return 1;
 	}
-    
+
 	initialize_structs();
 	read(fd,&pwm0);
 	read(fd,&pwm1);
-    
-    printf("entering program\n");
-    usleep(1000000);
 
-	pwm0.enabled = 1;
-	pwm1.enabled = 1;
-	
-	//software pwm simple test
-	pwm0.duty_cycle = 0;
-	pwm1.duty_cycle = 0;
-	write(fd,&pwm0);
-	write(fd,&pwm1);
-	usleep(5000000);
+	while(!close_menu)
+	{ 
+		showMenu();
+		cin.get(choice);
+		cout << "Choice = " << choice << endl;
+		cin.ignore();
+		switch(choice)
+		{
+		case '1':
+			cout << "Pinnumber to config" << endl;
+			cin >> pinnr;
+			cin.ignore();
+			pwm1.pin = pinnr;
+			if( ioctl(fd, PWM_SET_SETTINGS, &pwm1) == -1)
+			{   
+				perror( "ioctl PWM_SET_SETTINGS: failed" );
+				close( fd );
+				return -1;
+			}
+			break;
+		case '2':
+			showFunctionMenu();
+			cin >> function;
+			cin.ignore();
+			switch(function)
+			{
+			case '1':
+				pwm1.enabled = 1;
+				break;
+			case '2':
+				pwm1.enabled = 0;
+				break;
+			case '3':
+				cout << "Enter Frequency: "<< endl;
+				cin >> frequency;
+				cin.ignore();
+				pwm1.frequency = frequency;
 
-	pwm0.duty_cycle = 25;
-	pwm1.duty_cycle = 25;
-	write(fd,&pwm0);
-	write(fd,&pwm1);
-	usleep(5000000);
+				break;
+			case '4':
+				cout << "Enter Dutycycle: "<< endl;
+				cin >> dutycycle;
+				cin.ignore();
+				pwm1.duty_cycle = dutycycle;
+			}
+			if( ioctl(fd, PWM_SET_SETTINGS, &pwm1) == -1)
+			{   
+				perror( "ioctl PWM_SET_SETTINGS: failed" );
+				close( fd );
+				return -1;
+			}
+			break;
+		case '3':
+			showFunctionMenu();
+			cin >> function;
+			cin.ignore();
+			switch(function)
+			{
+			case '1':
+				pwm0.enabled = 1;
+				break;
+			case '2':
+				pwm0.enabled = 0;
+				break;
+			case '3':
+				cout << "Enter Frequency: "<< endl;
+				cin >> frequency;
+				cin.ignore();
+				pwm0.frequency = frequency;
 
-	pwm0.duty_cycle = 50;
-	pwm1.duty_cycle = 50;
-	write(fd,&pwm0);
-	write(fd,&pwm1);
-	usleep(5000000);
+				break;
+			case '4':
+				cout << "Enter Dutycycle: "<< endl;
+				cin >> dutycycle;
+				cin.ignore();
+				pwm0.duty_cycle = dutycycle;
+			}
+			if( ioctl(fd, PWM_SET_SETTINGS, &pwm0) == -1)
+			{   
+				perror( "ioctl PWM_SET_SETTINGS: failed" );
+				close( fd );
+				return -1;
+			}
+			break;
 
-    pwm0.duty_cycle = 75;
-	pwm1.duty_cycle = 75;
-	write(fd,&pwm0);
-	write(fd,&pwm1);
-	usleep(5000000);
-
-	pwm0.duty_cycle = 100;
-	pwm1.duty_cycle = 100;
-	write(fd,&pwm0);
-	write(fd,&pwm1);
-	usleep(5000000);
-     
-	pwm0.duty_cycle = 0;
-	pwm1.duty_cycle = 0;
-    pwm0.enabled = 0;
-	pwm1.enabled = 0;
-	write(fd,&pwm0);
-	write(fd,&pwm1);
-	usleep(5000000);
- 
-	 
+		case '4':
+			close_menu = true;
+			close ( fd );
+			break;
+			if( ioctl(fd, PWM_SET_SETTINGS, &pwm1) == -1)
+			{   
+				perror( "ioctl PWM_SET_SETTINGS: failed" );
+				close( fd );
+				return -1;
+				break;
+			}
+		}
+	}
 	close( fd );
 }
