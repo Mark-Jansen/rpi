@@ -1,10 +1,10 @@
 
-MODULE_NAME = ultrasoon
+MODULE_NAME = led
 
 # try to use the environment variable of BUILDROOT if it's defined,
 # otherwise use a hardcoded path
 ifeq "$(BUILDROOT)" ""
-	L_BUILDROOT:=$(HOME)/buildroot
+	L_BUILDROOT:=$(HOME)/buildroot/
 else
 	L_BUILDROOT:=$(BUILDROOT)
 endif

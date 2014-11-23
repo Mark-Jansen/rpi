@@ -9,11 +9,7 @@ endif
 
 CROSS_COMPILE:=$(L_BUILDROOT)/output/host/usr/bin/arm-linux-
 
-<<<<<<< HEAD
-all: test adc_test test_ultrasoon
-=======
 all: adc_test
->>>>>>> e49d336e3013ae19bc24c090683fc3ef2be6d704
 
 .PHONY: all, clean
 
