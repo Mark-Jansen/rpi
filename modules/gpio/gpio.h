@@ -3,9 +3,10 @@
 
 /* I/O settings */ 
 struct gpio_status {
-	int pinNr;		// Number of GPIO pin
-	int value;		// when fuction = output: use this value to write. when function = input: this value is actual value of pin
-	int function;	// use defines (INPUT, OUTPUT, ALT0, ALT1, ALT2, ALT3, ALT4 or ALT5)
+	int pinNr;			// Number of GPIO pin
+	int value;			// when fuction = output: use this value to write. when function = input: this value is actual value of pin
+	int function;		// use defines (INPUT, OUTPUT, ALT0, ALT1, ALT2, ALT3, ALT4 or ALT5)
+	int pull_up_down;	// use defines (PULL_DOWN_ENABLE, PULL_UP_ENABLE, PULL_OFF)
 };
 
 /* Gpio registers: check datasheet for more information */
@@ -22,6 +23,24 @@ struct GpioRegisters
 	// input
 	int GPLEV[2];		// GPIO LEVEL:				Use this register to read the actuel value of the pin 
 	int Reserved4;
+	// GPIO Pin Detect
+	int GPEDS[2];		// GPIO Pin Event Detect Status
+	int Reserved5;
+	int GPREN[2];		// GPIO Pin Rising Edge Detect Enable
+	int Reserved6;
+	int GPFEN[2];		// GPIO Pin Falling Edge Detect Enable
+	int Reserved7;
+	int GPHEN[2];		// GPIO Pin High Detect Enable
+	int Reserved8;
+	int GPLEN[2];		// GPIO Pin Low Detect Enable
+	int Reserved9;
+	int GPAREN[2];		// GPIO Pin Async. Rising Edge Detect
+	int Reserved10;
+	int GPAFEN[2];		// GPIO Pin Async. Falling Edge Detect
+	int Reserved11;
+	// Pull-up/down
+	int GPPUD;			// GPIO Pin Pull-up/down Enable
+	int GPPUDCLK[2];	// GPIO Pin Pull-up/down Enable Clock
 };
 
 /* function: check datasheet for pin function */
@@ -33,6 +52,19 @@ struct GpioRegisters
 #define		ALT3				0b111		// alternate function 3
 #define		ALT4				0b011		// alternate function 4
 #define		ALT5				0b010		// alternate function 5 (pinNr 18 = PWM0, pinNr19 = PWM1)
+
+// detect event
+#define  	NO_DETECT			0
+#define  	RISING_EDGE_DETECT	1
+#define  	FALLING_EDGE_DETECT	2
+#define  	LOW_DETECT 			3
+#define  	HIGH_DETECT			4
+
+// pull up/down
+#define		PULL_DOWN_ENABLE 	0b01		// for use pull down
+#define		PULL_UP_ENABLE 		0b10		// for use pull up
+#define		PULL_OFF		 	0b00		// for not use pull up/down
+
 
 #define THERMIOC_MAGIC_GPIO			'G'
 

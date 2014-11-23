@@ -42,13 +42,14 @@ void showMenu( void )
 	printf("\n[1] Set config function");
 	printf("\n[2] write value");
 	printf("\n[3] read value");
+	printf("\n[4] set pull up/down");
 	printf("\n[5] Stop");
 	printf("\n\nKeuze : ");
 }
 
 void showFunctionMenu( void )
 {
-	printf("\n\nMENU");
+	printf("\n\nFunction MENU");
 	printf("\n=============");
 	printf("\n[1] INPUT");
 	printf("\n[2] OUTPUT");
@@ -62,6 +63,14 @@ void showFunctionMenu( void )
 	printf("\n\nKeuze : ");
 }
 
+void showPullMenu( void )
+{
+	printf("\n\nPull up/down MENU");
+	printf("\n=============");
+	printf("\n[1] pull up");
+	printf("\n[2] pull down");
+	printf("\n\nKeuze : ");
+}
 
 // =================================================================================
 // ====   MAIN   F U N C T I O N                                                ====
@@ -100,7 +109,7 @@ int main()
 				gpio_test.pinNr = pinnr;
 				
 				showFunctionMenu();
-				cin >> function;
+				cin.get(choice);
 				cin.ignore();
 				switch(choice)
 				{
@@ -180,6 +189,35 @@ int main()
 					return -1;
 				}
 				cout << "value of gpiopin :" << gpio_test.pinNr << " = "<<  gpio_test.value << endl;
+				break;	
+			case '4':
+				cout << "Pinnumber to set pull_up_down" << endl;
+				cin >> pinnr;
+				cin.ignore();
+				gpio_test.pinNr = pinnr;
+				gpio_test.function = INPUT;
+				
+				showPullMenu();
+				cin.get(choice);
+				cin.ignore();
+				switch(choice)
+				{
+					case '1':
+					gpio_test.pull_up_down = PULL_UP_ENABLE;
+					break;
+					case '2':
+					gpio_test.pull_up_down = PULL_DOWN_ENABLE;
+					break;
+				}				
+				cout << "youre pinnumber = \t" << gpio_test.pinNr << endl;
+				cout << "youre function = \t" << gpio_test.function << endl;
+				cout << "youre pull up/down = \t" << gpio_test.pull_up_down << endl;
+				if( ioctl(fd, GPIO_SET_CONFIG, &gpio_test) == -1) 
+				{
+					perror( "ioctl GPIO_SET_CONFIG:  failed" );
+					close( fd );
+					return -1;
+				}
 				break;	
 			case '5':
 				close_menu = true;

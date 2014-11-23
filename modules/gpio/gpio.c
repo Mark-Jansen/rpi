@@ -67,11 +67,13 @@ int gpio_set_config(struct gpio_status* arg)
 	int mask2;
 	int mask3;
 	int mask4;
+	int i;
 	
 	unsigned long flags;
 	trace("");
 	spin_lock_irqsave( &g_Lock, flags );
 	
+	/*	Set gpio function	*/
 	// check for the right register.
 	registerIndex = arg->pinNr / 10;
 	// check old register settings
@@ -84,6 +86,17 @@ int gpio_set_config(struct gpio_status* arg)
 	mask4 = mask2 | mask3;									// a mask to set the other bits back 
 	gpioRegister->GPFSEL[registerIndex] = mask4;			// set the new value into the register 
 		
+	/*	Set pull up/down	*/
+	if(arg->pull_up_down != 0)
+	{
+		gpioRegister->GPPUD = arg->pull_up_down;		// set the required control signal	
+		for(i=0; i<150; i++) {}							// wait 150 cycles
+		gpioRegister->GPPUDCLK[arg->pinNr/32] = 1 << arg->pinNr;	// clock the control signal into the GPIO pads you wish to modify
+		for(i=0; i<150; i++) {}							// wait 150 cycles
+		gpioRegister->GPPUD = PULL_OFF;					// remove the required control signal	
+		gpioRegister->GPPUDCLK[arg->pinNr/32] = 0;		// Remove clock
+	}
+	
 	spin_unlock_irqrestore( &g_Lock, flags );
 	return 0;
 }
@@ -140,7 +153,7 @@ int gpio_write(struct gpio_status* arg)
 	spin_lock_irqsave( &g_Lock, flags );
 		
 	// check right register
-	if ((gpioPin >= 0) && (gpioPin =< 54))	// GPIO Pin is available
+	if ((gpioPin >= 0) && (gpioPin <= 54))	// GPIO Pin is available
 	{
 		registerNr = gpioPin/32;			// find register for this gpioPin
 	}
@@ -158,7 +171,7 @@ int gpio_write(struct gpio_status* arg)
 	else				// for set to 0 we must use GPCLR
 	{
 		gpioRegister->GPCLR[registerNr] = mask;	// Set gpiopin to "0" 
-	
+	}
 	spin_unlock_irqrestore( &g_Lock, flags );
 	return 0;
 }
