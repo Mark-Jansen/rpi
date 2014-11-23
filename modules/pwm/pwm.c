@@ -157,6 +157,18 @@ int pwm_set_settings(struct pwm_settings* arg)
 	unsigned long flags;
 	trace("");
 	spin_lock_irqsave( &g_Lock, flags );
+	
+	if(arg->channel == SW_PWM_CH)
+	{
+	  if (g_Settings[SW_PWM_CH].pin != arg->pin)
+	  {
+	    gpio_set_value(g_Settings[SW_PWM_CH].pin, 0);
+        gpio_free(g_Settings[SW_PWM_CH].pin);	
+		
+		gpio_request(arg->pin, "soft_pwm_gpio");
+        gpio_direction_output(arg->pin, 1);
+	  }
+	}
 	g_Settings[arg->channel].channel    = arg->channel;
 	g_Settings[arg->channel].pin        = arg->pin;
 	g_Settings[arg->channel].frequency  = arg->frequency;
@@ -167,6 +179,11 @@ int pwm_set_settings(struct pwm_settings* arg)
 	  update_hw_pwm_settings(); //todo
 	  configHardwarePwm();
 	}
+	
+	
+	
+	
+	
 	spin_unlock_irqrestore( &g_Lock, flags );
 	return 0;
 }
