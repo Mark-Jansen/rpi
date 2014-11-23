@@ -4,7 +4,7 @@
 // gegevens per I/O aansluiting
 struct led_status {
 	int pinNr;	
-	int value;			// ON/OFF	
+	int value;			// use defines (ON OFF)
 	int blinkTimer;		// mSec
 };
 

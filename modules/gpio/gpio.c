@@ -9,8 +9,7 @@
 // ==== History   : Version 1.00                                                ====
 // ====             								                            ====
 // ====                     							                        ====
-// ====                             
-                                            ====
+// ====                                                                         ====
 // =================================================================================
 
 // =================================================================================
@@ -23,6 +22,7 @@
 #include <linux/uaccess.h>		//copy_[from/to]_user
 #include <asm/io.h>
 #include <mach/platform.h>
+#include "gpio.h"
 
 
 // =================================================================================
@@ -31,8 +31,6 @@
 #define DRV_NAME		"gpio"
 #define DRV_REV			"r1"
 #define DRV_MAJOR		0
-
-#include "gpio.h"
 
 #define trace(format, arg...) do { if( debug & 1 ) pr_info( DRV_NAME ": %s: " format "\n", __FUNCTION__, ## arg ); } while (0)
 #define info(format, arg...) pr_info( DRV_NAME ": " format "\n", ## arg )
@@ -77,14 +75,14 @@ int gpio_set_config(struct gpio_status* arg)
 	// check for the right register.
 	registerIndex = arg->pinNr / 10;
 	// check old register settings
-	oldRegister = gpioRegister->GPFSEL[registerIndex];			// oude register
+	oldRegister = gpioRegister->GPFSEL[registerIndex];		// check old register
 	// change register settings
-	bit = (arg->pinNr % 10) * 3	;							// juist pin ivm 3 bits per pin voor functie
-	mask1 = 0b111 << bit;									// mask voor 3 bits van het juiste pinNr
-	mask2 = oldRegister & ~mask1;							// forceer de 3 bits van gekozen pinNr op 0
-	mask3 = (arg->value << bit) & mask1;					// mask voor het setten van de juiste waarde op pin nr
-	mask4 = mask2 | mask3;									// zet de overige bits weer in de oorspronkelijke stond terug
-	gpioRegister->GPFSEL[registerIndex] = mask4;			// geef gekozen pinNr juist waarde	
+	bit = (arg->pinNr % 10) * 3	;							// there are 10 gpiopins for 1 register. we need 3 bits to set the function of 1 gpiopin
+	mask1 = 0b111 << bit;									// a mask to find the 3 bits for this gpiopin
+	mask2 = oldRegister & ~mask1;							// a mask to set the 3 bits for this gpiopin to zero and save the other bits
+	mask3 = (arg->value << bit) & mask1;					// a mask to set the 3 bits for this gpiopin to the correct value
+	mask4 = mask2 | mask3;									// a mask to set the other bits back 
+	gpioRegister->GPFSEL[registerIndex] = mask4;			// set the new value into the register 
 		
 	spin_unlock_irqrestore( &g_Lock, flags );
 	return 0;
@@ -110,10 +108,10 @@ int gpio_read(struct gpio_status* arg)
 	// check right register
 	if ((gpioPin >= 0) && (gpioPin < 54))	// GPIO Pin is available
 	{
-		gplevregister = gpioPin/32;							// bepaal het goede register
-		mask = 1 << gpioPin;								// mask voor de juiste gpio pin
-		gplevValue = gpioRegister->GPLEV[gplevregister];	// lees het goed regiser uit
-		arg->value = (gplevValue & mask) >> gpioPin;		// lees de goede gpio pin uit en shift hem zodat er alleen 1 of 0 uitkomt
+		gplevregister = gpioPin/32;							// find register for this gpioPin
+		mask = 1 << gpioPin;								// mask for gpio pin.
+		gplevValue = gpioRegister->GPLEV[gplevregister];	// read the register
+		arg->value = (gplevValue & mask) >> gpioPin;		// Read the gpioPin with mask, use shift for the value "0" or "1" 
 	}
 	else
 	{
@@ -142,32 +140,36 @@ int gpio_write(struct gpio_status* arg)
 	spin_lock_irqsave( &g_Lock, flags );
 		
 	// check right register
-	if ((gpioPin > 0) && (gpioPin < 54))	// GPIO Pin is available
+	if ((gpioPin >= 0) && (gpioPin =< 54))	// GPIO Pin is available
 	{
-		registerNr = gpioPin/32;			// bepaal het goede register
+		registerNr = gpioPin/32;			// find register for this gpioPin
 	}
 	else
 	{
 		printk(KERN_INFO "PinNr not available. \n");
 	}
 
-	// set outputvalue at right register
+	// set outputvalue with the right register
 	mask = 1 << gpioPin;
-	if (outputvalue)	// for set to 1 use GPSET
+	if (outputvalue)	// for set to 1 we must use GPSET
 	{	
-		gpioRegister->GPSET[registerNr] = mask;	// zet de juiste gpio pin op 1 
+		gpioRegister->GPSET[registerNr] = mask;	// Set gpiopin to "1"
 	}
-	else				// for set to 0 use GPCLR
+	else				// for set to 0 we must use GPCLR
 	{
-		gpioRegister->GPCLR[registerNr] = mask;	// zet de juiste gpio pin op 0
-	}
+		gpioRegister->GPCLR[registerNr] = mask;	// Set gpiopin to "0" 
 	
 	spin_unlock_irqrestore( &g_Lock, flags );
 	return 0;
 }
 EXPORT_SYMBOL(gpio_write);
 
-// file operations
+
+// =================================================================================
+// static long led_ioctl(struct file *file, unsigned int command, unsigned long arg)
+// Pre : 
+// Post: uses the command function
+// =================================================================================
 static long gpio_ioctl(struct file *file, unsigned int command, unsigned long arg)
 {
 	long ret = -EFAULT;

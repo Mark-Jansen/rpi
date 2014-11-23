@@ -4,23 +4,23 @@
 /* I/O settings */ 
 struct gpio_status {
 	int pinNr;		// Number of GPIO pin
-	int value;		// when fuction = output: use this value to write. when function = input: this value is actuel value of pin
-	int function;	// use defines
+	int value;		// when fuction = output: use this value to write. when function = input: this value is actual value of pin
+	int function;	// use defines (INPUT, OUTPUT, ALT0, ALT1, ALT2, ALT3, ALT4 or ALT5)
 };
 
 /* Gpio registers: check datasheet for more information */
 struct GpioRegisters
 {
 	// function select
-	int GPFSEL[6];		// GPIO SELECT:	Deze kun je gebruiken om een gekozen pin input of output te maken	// check datasheet
+	int GPFSEL[6];		// GPIO FUNCTION SELECT:	use this register to set the function to input, output or alternative
 	int Reserved1;
 	// output
-	int GPSET[2];		// GPIO SET: 	Deze kun je gebruiken om de gekozen pin 1 te maken					// check datasheet
+	int GPSET[2];		// GPIO SET: 				Use this register to set outputvalue to 1	
 	int Reserved2;
-	int GPCLR[2];		// GPIO CLEAR: 	Deze kun je gebruiken om de gekozen pin 0 te maken					// check datasheet
+	int GPCLR[2];		// GPIO CLEAR: 				Use this register to set outputvalue to 0	
 	int Reserved3;
 	// input
-	int GPLEV[2];		// GPIO LEVEL:	Deze geeft de actuele waarden van de GPIO pin
+	int GPLEV[2];		// GPIO LEVEL:				Use this register to read the actuel value of the pin 
 	int Reserved4;
 };
 
@@ -41,8 +41,8 @@ struct GpioRegisters
 #define GPIO_SET_CONFIG				_IOW(THERMIOC_MAGIC_GPIO, 2, struct gpio_status)
 
 /* export symbols */
-int gpio_write(struct gpio_status* arg);
-int gpio_read(struct gpio_status* arg);
-int gpio_set_config(struct gpio_status* arg);
+int gpio_write(struct gpio_status* arg);		// write a value to a gpiopin
+int gpio_read(struct gpio_status* arg);			// read actual value of gpiopin
+int gpio_set_config(struct gpio_status* arg);	// set function and value to a gpiopin
 
 #endif // GPIO_H

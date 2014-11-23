@@ -1,23 +1,46 @@
+// =================================================================================
+// ====                                                                         ====
+// ==== File      : led.c					                                    ====
+// ====                                                                         ====
+// ==== Function  : led_driver                   	                            ====
+// ====                                                                         ====
+// ==== Author    : Stefan van Nunen    			                            ====
+// ====                                                                         ====
+// ==== History   : Version 1.00                                                ====
+// ====             								                            ====
+// ====                     							                        ====
+// ====                                                                         ====
+// =================================================================================
+
+// =================================================================================
+// ====   I N C L U D E S                                                       ====
+// =================================================================================
 #include <linux/fs.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/ioctl.h>
 #include <linux/uaccess.h>		//copy_[from/to]_user
 #include <linux/delay.h>
+#include "led.h"
+#include "../gpio/gpio.h"
 
+
+// =================================================================================
+// ====   Defines	                                                            ====
+// =================================================================================
 #define LED_NAME		"led"
 #define LED_REV			"r1"
 #define LED_MAJOR		0
-
-
-#include "led.h"
-#include "../gpio/gpio.h"
 
 #define trace(format, arg...) do { if( debug & 1 ) pr_info( LED_NAME ": %s: " format "\n", __FUNCTION__, ## arg ); } while (0)
 #define info(format, arg...) pr_info( LED_NAME ": " format "\n", ## arg )
 #define warning(format, arg...) pr_warn( LED_NAME ": " format "\n", ## arg )
 #define error(format, arg...) pr_err( LED_NAME ": " format "\n", ## arg )
 
+
+// =================================================================================
+// ====   S T R U C T S                                                         ====
+// =================================================================================
 static int g_Major = 0;
 static struct class* g_Class = NULL;
 static struct device* g_Device = NULL;
@@ -30,77 +53,82 @@ module_param(debug, int, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
 
 
+// =================================================================================
+// int led_set_config(struct led_status* status)
+// Pre : 
+// Post: sets gpiopin to output and new value
+// =================================================================================
 int led_set_config(struct led_status* status)
 {
-	unsigned long flags;
-	int returnValue = 0;	
 	// make gpio_status struct and set values
 	led.pinNr = status->pinNr;
 	led.value = status->value;
 	led.function = OUTPUT;
 
 	trace("");
-	spin_lock_irqsave( &g_Lock, flags );
 	
 	// use gpio.c
 	returnValue = gpio_set_config(&led);
 
-	spin_unlock_irqrestore( &g_Lock, flags );
 	return returnValue;	
 }
 EXPORT_SYMBOL(led_set_config);
 
+
+// =================================================================================
+// int led_on(struct led_status* status)
+// Pre : 
+// Post: set led on
+// =================================================================================
 int led_on(struct led_status* status)
 {
-	unsigned long flags;
-	int returnValue = 0;
-	
 	// make gpio_status struct and set values
 	led.pinNr = status->pinNr;
 	led.value = ON;
 	led.function = OUTPUT;
 
 	trace("");
-	spin_lock_irqsave( &g_Lock, flags );
-	
+
 	// use gpio.c
 	returnValue = gpio_write(&led);
-	
-	spin_unlock_irqrestore( &g_Lock, flags );
-	
+
 	return returnValue;
 }
 EXPORT_SYMBOL(led_on);
 
 
+// =================================================================================
+// int led_off(struct led_status* status)
+// Pre : 
+// Post: set led off
+// =================================================================================
 int led_off(struct led_status* status)
 {
-	unsigned long flags;
-	int returnValue = 0;
-	
 	// make gpio_status struct and set values
 	led.pinNr = status->pinNr;
 	led.value = OFF;
 	led.function = OUTPUT;
 
 	trace("");
-	spin_lock_irqsave( &g_Lock, flags );
-		
+
 	// use gpio.c
 	returnValue = gpio_write(&led);
-	
-	spin_unlock_irqrestore( &g_Lock, flags );
-	
+
 	return returnValue;
 }
 EXPORT_SYMBOL(led_off);
 
+
+// =================================================================================
+// int led_blink(struct led_status* status)
+// Pre : 
+// Post: set led to blink with blinkTimer for frequency
+// =================================================================================
 int led_blink(struct led_status* status)
 {
 	int i = 0;
 	int ledToggle = 0;
 	int returnValue = 0;
-	unsigned long flags;
 		
 	// make gpio_status struct and set values
 	led.pinNr = status->pinNr;
@@ -108,7 +136,6 @@ int led_blink(struct led_status* status)
 	led.function = OUTPUT;
 
 	trace("");
-	spin_lock_irqsave( &g_Lock, flags );
 		
 	for(i=0; i<10; i++);
 	{
@@ -120,14 +147,16 @@ int led_blink(struct led_status* status)
 		returnValue = gpio_write(&led);
 	}
 	
-	spin_unlock_irqrestore( &g_Lock, flags );
-	
 	return returnValue;	
 }
 EXPORT_SYMBOL(led_blink);
 
 
-// file operations
+// =================================================================================
+// static long led_ioctl(struct file *file, unsigned int command, unsigned long arg)
+// Pre : 
+// Post: uses the command function
+// =================================================================================
 static long led_ioctl(struct file *file, unsigned int command, unsigned long arg)
 {
 	long ret = -EFAULT;
