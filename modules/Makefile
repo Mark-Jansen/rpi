@@ -2,7 +2,9 @@
 # add each new target to 'TARGETS'
 # order is important, if battery depends on adc, adc should be first!
 TARGETS = adc \
-		battery
+		battery \
+		gpio \
+		led
 
 PREFIX = $(shell echo `pwd`)/../build/modules/
 
