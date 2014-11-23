@@ -109,12 +109,19 @@ void configHardwarePwm(void)
 	udelay(10); 
 
 	s_PwmRegisters->RNG1 = COUNTS;
-
-	// start PWM1 in
-	if(mode == PWMMODE) //PWM mode 
-		s_PwmRegisters->CTL |= (1 << 0); 
-	else // M/S Mode
-		s_PwmRegisters->CTL |= ((1 << 7) | (1 << 0));
+     
+	if(g_Settings[HW_PWM_CH].enabled == TRUE) 
+	{
+	  // start PWM1 in
+	  if(mode == PWMMODE) //PWM mode 
+		  s_PwmRegisters->CTL |= (1 << 0); 
+	  else // M/S Mode
+		  s_PwmRegisters->CTL |= ((1 << 7) | (1 << 0));
+    }
+	else
+	{
+	  s_PwmRegisters->CTL = 0;  /* turn pwm off */
+	}
 }
 
 
