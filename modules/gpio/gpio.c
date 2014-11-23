@@ -82,7 +82,7 @@ int gpio_set_config(struct gpio_status* arg)
 	bit = (arg->pinNr % 10) * 3	;							// there are 10 gpiopins for 1 register. we need 3 bits to set the function of 1 gpiopin
 	mask1 = 0b111 << bit;									// a mask to find the 3 bits for this gpiopin
 	mask2 = oldRegister & ~mask1;							// a mask to set the 3 bits for this gpiopin to zero and save the other bits
-	mask3 = (arg->value << bit) & mask1;					// a mask to set the 3 bits for this gpiopin to the correct value
+	mask3 = (arg->function << bit) & mask1;					// a mask to set the 3 bits for this gpiopin to the correct value
 	mask4 = mask2 | mask3;									// a mask to set the other bits back 
 	gpioRegister->GPFSEL[registerIndex] = mask4;			// set the new value into the register 
 		
