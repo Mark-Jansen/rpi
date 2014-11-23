@@ -9,13 +9,13 @@ endif
 
 CROSS_COMPILE:=$(L_BUILDROOT)/output/host/usr/bin/arm-linux-
 
-all: adc_test
+all: balancer
 
 .PHONY: all, clean
 
-adc_test: adc_test.cpp
-	$(CROSS_COMPILE)g++ adc_test.cpp -o ../build/adc_test -I../modules
+balancer: main.cpp
+	$(CROSS_COMPILE)g++ main.cpp -o ../build/balancer -I../modules
 
 clean:
-	rm -f *.o ../build/adc_test
+	rm -f *.o ../build/balancer
 
