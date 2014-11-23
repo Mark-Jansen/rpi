@@ -1,15 +1,18 @@
 
-TARGETS = modules test
+TARGETS = modules \
+		application \
+		test
 
-.PHONY: all clean
+.PHONY: all \
+		clean
 
 all:
 	for T in $(TARGETS); do  \
-		cd $$T; ${MAKE};  \
+		${MAKE} -s -C $$T; \
 	done;
 
 clean:
 	for T in $(TARGETS); do  \
-		cd $$T; ${MAKE} clean;  \
+		${MAKE} -s -C $$T clean; \
 	done
 
