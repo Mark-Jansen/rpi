@@ -1,6 +1,11 @@
 #ifndef FILE_H
 #define FILE_H
 
+#include <sys/types.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
+#include <fcntl.h>
+
 class File
 {
 public:

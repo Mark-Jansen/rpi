@@ -8,6 +8,7 @@
 
 #include "gyro.h"
 #include "gyro_internal.h"
+#include "gyro_registers.h"
 #include "../common/common.h"
 
 // guard against a misconfigured kernel
@@ -19,19 +20,6 @@
 static struct i2c_client *g_Client;
 static DEFINE_MUTEX(g_I2CLock);
 
-
-// helper function to read from the i2c device
-static int i2c_read( char* buf, int count )
-{
-	int ret = -ENODEV;
-	trace("");
-	mutex_lock( &g_I2CLock );
-	if( g_Client ) {
-		ret = i2c_master_recv( g_Client, buf, count );
-	}
-	mutex_unlock( &g_I2CLock );
-	return (count == ret) ? 0 : ret;
-}
 
 // helper function to write to the i2c device
 static int i2c_write( char* buf, int count )
@@ -46,18 +34,28 @@ static int i2c_write( char* buf, int count )
 	return (count == ret) ? 0 : ret;
 }
 
+// helper function to read from the i2c device
+static int i2c_read( unsigned char address, char* buf, int count )
+{
+	int ret = -ENODEV;
+	trace("");
+	mutex_lock( &g_I2CLock );
+	if( g_Client ) {
+		if( 1 == i2c_master_send( g_Client, &address, 1 ) ) {
+			ret = i2c_master_recv( g_Client, buf, count );
+		}
+	}
+	mutex_unlock( &g_I2CLock );
+	return (count == ret) ? 0 : ret;
+}
+
 // read the gyro chip with i2c.
 int gyro_read_device(struct gyro_data* data)
 {
 	char buf[14];
 	trace("");
-	buf[0] = 0x3B;
-	if( i2c_write( buf, 1 ) ) {
-		error("!set address failed");
-		return -EIO;
-	}
-	if( i2c_read( buf, 14 ) ) {
-		error("!read failed");
+	if( i2c_read( REG_ACCEL_XOUT_H, buf, 14 ) ) {
+		error("read failed");
 		return -EIO;
 	}
 	data->accel_x = buf[0] << 8 | buf[1];
@@ -109,12 +107,53 @@ static struct i2c_driver gyro_i2c_driver = {
 	},
 };
 
+static int gyro_write_setting(unsigned char address, unsigned char value)
+{
+	unsigned char buf[2] = { address, value };
+	return i2c_write( buf, 2 );
+}
+
+static int gyro_init_settings(void)
+{
+	char buf[1];
+	int ret = 0;
+	if( i2c_read( REG_WHO_AM_I, buf, 1 ) ) {
+		error("reading identifier failed");
+		return -EIO;
+	}
+	if( buf[0] != 0x68 ) {
+		error("another chip responds on my address!");
+		return -EIO;
+	}
+	
+	// reset to defaults, disable sleep.
+	//ret |= gyro_write_setting( REG_PWR_MGMT_1, 0x80 );
+	ret |= gyro_write_setting( REG_PWR_MGMT_1, 0x00 );
+	
+	// Sample rate to 1000 / (1 + 1) = 500Hz
+	ret |= gyro_write_setting( REG_SMPLRT_DIV, 0x01 );
+	// disable FSync, 44Hz DLPF
+	ret |= gyro_write_setting( REG_CONFIG, 0x03 );
+	// disable gyro self tests, scale of 500 degrees/s
+	ret |= gyro_write_setting( REG_GYRO_CONFIG, 0x08 );
+	// disable accel self tests, scale of +-4g, no DHPF
+	ret |= gyro_write_setting( REG_ACCEL_CONFIG, 0x08 );
+
+
+	
+
+	if( ret ) {
+		error("writing defaults");
+		return -EIO;
+	}
+	return 0;
+}
+
 int gyro_i2c_init()
 {
 	int busnum = 1;
 	struct i2c_adapter *adap;
 	struct i2c_client* client;
-	char buf[2];
 	trace("");
 	adap = i2c_get_adapter(busnum);
 	if (!adap) {
@@ -128,17 +167,13 @@ int gyro_i2c_init()
 	if( !client ) {
 		error( "failed to register %s to i2c%d\n", gyro_i2c_board_info.type, busnum);
 	}
-	buf[0] = 0x6B;	// PWR_MGMT_1
-	buf[1] = 0;		// wake up
-	if( i2c_write( buf, 2 ) ) {
-		error("!write failed");
+	if( gyro_init_settings() ) {
 		mutex_lock( &g_I2CLock );
 		g_Client = NULL;
 		mutex_unlock( &g_I2CLock );
 		i2c_unregister_device( client );
 		return -EIO;
 	}
-
 
 	return i2c_add_driver( &gyro_i2c_driver );
 }
