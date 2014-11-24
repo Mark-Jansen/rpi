@@ -4,7 +4,8 @@
 TARGETS = adc \
 		battery \
 		gpio \
-		led
+		led \
+		ultrasoon
 
 PREFIX = $(shell echo `pwd`)/../build/modules/
 

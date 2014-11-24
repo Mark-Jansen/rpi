@@ -5,13 +5,12 @@
 #include <linux/uaccess.h>
 #include <linux/delay.h>
 #include <linux/time.h>
+#include "../gpio/gpio.h"
+#include "ultrasoon.h"
 
 #define DRV_NAME			"ultrasoon"
 #define DRV_REV				"r1"
 #define ultrasoon_MAJOR		249
-
-#include "../gpio/gpio.h"
-#include "ultrasoon.h"
 
 #define trace(format, arg...) do { if( debug & 1 ) pr_info( DRV_NAME ": %s: " format "\n", __FUNCTION__, ## arg ); } while (0)
 #define info(format, arg...) pr_info( DRV_NAME ": " format "\n", ## arg )
@@ -68,7 +67,7 @@ EXPORT_SYMBOL(ultrasoon_get_config);
 
 int ultrasoon_measure_distance(struct ultrasoon_config* cfg,struct ultrasoon_data* result)
 {
-	unsigned long GPIO_TIMEOUT_SEC 	= 5; //== 0.5ec // 0 == OFF
+	unsigned long GPIO_TIMEOUT_SEC 	= 5; //== 0.5ec // 0 == OFF // More 5 == useless because of the distance
 	long int time_difference		= 0;
 	
 	struct timespec timeout_start	= {0};
@@ -79,16 +78,12 @@ int ultrasoon_measure_distance(struct ultrasoon_config* cfg,struct ultrasoon_dat
 	trigger_port.value 		= LOW;
 	trigger_port.function  	= OUTPUT;
 	result->distance 		= -1;
-	
+		
 	//SET GPIO VOLGENS DE CFG CONFIG
 	if(result->type == FRONT_SENSOR)
-	{
 		echo_port.pinNr	= cfg->pinNr_echo_1;
-	}
 	else
-	{
 		echo_port.pinNr	= cfg->pinNr_echo_2;
-	}
 	
 	echo_port.function	= INPUT;
 	echo_port.value 	= LOW;
@@ -96,7 +91,7 @@ int ultrasoon_measure_distance(struct ultrasoon_config* cfg,struct ultrasoon_dat
 	gpio_set_config(&trigger_port);
 	gpio_set_config(&echo_port);
 	
-//DEBUG!!
+//##########################	DEBUG DATA		##########################
 if(debug)
 {
 	printk(KERN_INFO "3 sec niks doen kijken of set config GPIO output aanpast\n");
@@ -104,37 +99,37 @@ if(debug)
 	printk(KERN_INFO "SET CONFIG:\nTrigger_port: %d \n",trigger_port.pinNr);
 	printk(KERN_INFO "EchoPort: %d \n",echo_port.pinNr);
 }
+//##########################	DEBUG DATA		##########################
 	
-	if(gpio_write(&trigger_port) != 0)
+	if(gpio_write(&trigger_port) != 0)// set trigger port LOW
 		printk(KERN_INFO "ERROR from GPIO_WRITE Line: %d \n",__LINE__);
 		
-	//SET SLEEP FOR 0,5sec to let the sensor settel
-	if(debug)
-	printk(KERN_INFO "SET SLEEP FOR 1sec to let the sensor settel \n");	
+	//SET SLEEP FOR 1 sec to let the sensor settel
+	msleep(1000);	
 	
-	msleep(1000);
-	if(debug)
-	printk(KERN_INFO "SET SLEEP FOR 1sec is voorbij\n");	
-	
-	//Set timmers timeout of indien 0 zetten timeout uit
+	//Set timmer timeout value
 	if( GPIO_TIMEOUT_SEC > 0)
 	{
 		GPIO_TIMEOUT_SEC = GPIO_TIMEOUT_SEC * 10000000;
 		timeout_start = current_kernel_time();
 		timeout_start.tv_nsec += GPIO_TIMEOUT_SEC;
+		
+		if( timeout_start.tv_nsec >= 1000000000)//indien klokje rond.
+		{							 
+			timeout_start.tv_nsec -= 1000000000;
+		}
 	}
 	
-//DEBUG!!
-if(debug)
+//##########################	DEBUG DATA		##########################
+if(debug && GPIO_TIMEOUT_SEC > 0)
 {
-	if(GPIO_TIMEOUT_SEC > 0)
-	{
-		start_timeVal = current_kernel_time();
-		printk(KERN_INFO "Current time: %lu\n",start_timeVal.tv_nsec);	
-		printk(KERN_INFO "Timeout time: %lu\n",timeout_start.tv_nsec);	
-	}
+	start_timeVal = current_kernel_time();
+	printk(KERN_INFO "Current time: %lu\n",start_timeVal.tv_nsec);	
+	printk(KERN_INFO "Timeout time: %lu\n",timeout_start.tv_nsec);	
 }
+//##########################	DEBUG DATA		##########################
 	
+	//Send the puls to Ultrasoon device
 	trigger_port.value = HIGH;
 	if(gpio_write(&trigger_port) != 0)
 		printk(KERN_INFO "ERROR from GPIO_WRITE Line: %d \n",__LINE__);
@@ -145,6 +140,7 @@ if(debug)
 	if(gpio_write(&trigger_port) != 0)
 	printk(KERN_INFO "ERROR from GPIO_WRITE Line: %d \n",__LINE__);
 	
+	//Wait till echoport get HIGH
 	while(echo_port.value == 0)
 	{
 		if(gpio_read(&echo_port))
@@ -158,13 +154,11 @@ if(debug)
 		if(start_timeVal.tv_nsec > timeout_start.tv_nsec && GPIO_TIMEOUT_SEC > 0 )
 		{
 			printk(KERN_INFO "GPIO TIME OUT @ Line: %d \nstart_timeVal was: %lu\n",__LINE__,start_timeVal.tv_nsec);
-			printk(KERN_INFO "Timeout time is: %lu",timeout_start.tv_nsec);
-			start_timeVal = current_kernel_time();
-			printk(KERN_INFO "GPIO TIME OUT @ Line: %d \nstart_timeVal was: %lu\n",__LINE__,start_timeVal.tv_nsec);
+			printk(KERN_INFO "Timeout time was: %lu",timeout_start.tv_nsec);
 			return 0;
 		}
 	}
-		
+	//count the time echo port is HIGH	
 	while(echo_port.value != 0)
 	{
 		if(gpio_read(&echo_port))
@@ -185,7 +179,7 @@ if(debug)
 
 	time_difference = end_timeVal.tv_nsec - start_timeVal.tv_nsec;
 	
-//DEBUG!!	
+//##########################	DEBUG DATA		##########################
 if(debug)
 {
 	printk(KERN_INFO "start_timeVal value: %lu\n",start_timeVal.tv_nsec);
@@ -194,17 +188,19 @@ if(debug)
 	
 	if(start_timeVal.tv_nsec > end_timeVal.tv_nsec)
 	{
-		printk(KERN_INFO "WHAAAAAAAAAAAAAAAAA dit mag nooit!!!\n");
+		printk(KERN_INFO "WHAAAAAAAAAAAAAAAAA THIS MAY NEVER HAPPEN!!!!\n");
 	}
 }
+//##########################	DEBUG DATA		##########################
 
-	time_difference = time_difference / 1000000;	//maak van nano mili seconden
-	time_difference = time_difference * 17150;
-	result->distance = time_difference / 1000; //maak hele cm van
+	time_difference = time_difference / 1000000;	//Turn nano into mili sec
+	time_difference = time_difference * 17150;		// Speed of Sound 340.29 /2 because bounce back
+	result->distance = time_difference / 1000; 		//Round up into cm
 	
-//DEBUG!!
+//##########################	DEBUG DATA		##########################
 if(debug)
-printk(KERN_INFO "distance value: %d\n",result->distance);
+	printk(KERN_INFO "distance value: %d\n",result->distance);
+//##########################	DEBUG DATA		##########################
 	
 	return 0;
 }
@@ -229,6 +225,8 @@ static long ultrasoon_ioctl(struct file *file, unsigned int command, unsigned lo
 	
 	switch( command ) {
 		case ULTRASOON_GET_DISTANCE:
+			if( copy_from_user( &data, (void*)arg, sizeof(struct ultrasoon_data) ) )
+				return -EFAULT;
 			if( !ultrasoon_get_distance( &data ) )
 				ret = 0;
 			else
