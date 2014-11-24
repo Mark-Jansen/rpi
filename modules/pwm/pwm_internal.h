@@ -29,7 +29,7 @@
 #define NANO_SEC       (MICRO_SEC*1000)
 
 /* hardware pwm settings */
-#define GP_BASE      (BCM2708_PERI_BASE + 0x200000) //todo use gpio from stefan!!
+#define BCM2708_PERI_BASE 	 0x20000000
 #define PWM_BASE     (BCM2708_PERI_BASE + 0x20C000)
 #define CLOCK_BASE   (BCM2708_PERI_BASE + 0x101000)
 #define PWMMODE 					 1
@@ -37,16 +37,6 @@
 #define DEFAULT_PWM_PIN             18
 #define COUNTS					   256
 int mode = PWMMODE; // this is a standard pwm mode            
-
-//todo use gpio from stefan!!
-struct GpioRegisters
-{
-	uint32_t GPFSEL[6];
-	uint32_t Reserved1;
-	uint32_t GPSET[2];
-	uint32_t Reserved2;
-	uint32_t GPCLR[2];
-};
 
 struct PwmRegisters
 {

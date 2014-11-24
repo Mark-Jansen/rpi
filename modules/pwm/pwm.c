@@ -2,13 +2,13 @@
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/ioctl.h>
-#include <linux/uaccess.h>		//copy_[from/to]_user
-#include <linux/gpio.h>         //TODO use gpio from stefan!!
+#include <linux/uaccess.h>		
 #include <linux/hrtimer.h> 
 #include <linux/delay.h> 
 #include <asm/io.h>
 #include "pwm.h"
 #include "pwm_internal.h"
+#include "../gpio/gpio.h"
 
 static int g_Major = 0;
 static struct class* g_Class = NULL;
@@ -19,36 +19,42 @@ static DEFINE_SPINLOCK(g_Lock);
 static struct pwm_settings g_Settings[NR_OF_CHANNELS];
 
 /* hardware pwm */
-struct GpioRegisters   *s_pGpioRegisters; //TODO use gpio from stefan!!
 struct PwmRegisters    *s_PwmRegisters;
 struct ClockRegisters  *s_ClockRegisters;
 /* end of hardware pwm */
+
+/* gpio settings */
+struct gpio_status hw_pwm;
+struct gpio_status sw_pwm;
+/* end of gpio settings */
 
 int debug = 0;
 module_param(debug, int, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
 
 /* start of software pwm code*/
-struct hrtimer tm1, tm2;
-static ktime_t t1;
+struct hrtimer tm1, tm2; //define timer1 and timer2
+static ktime_t t1; 
 
 /* rising edge of software pwm */
 enum hrtimer_restart cb1(struct hrtimer *t) {
 	ktime_t now;
 	int ovr;
-	now = hrtimer_cb_get_time(t);
-	ovr = hrtimer_forward(t, now, t1);
+	now = hrtimer_cb_get_time(t); //get current time 
+	ovr = hrtimer_forward(t, now, t1); //set timer1 to be called again in t1(frequency) from now (creating rising edge of pwm)
 
 	if (g_Settings[SW_PWM_CH].duty_cycle && g_Settings[SW_PWM_CH].enabled) {
-		gpio_set_value(g_Settings[SW_PWM_CH].pin, 1);
+		sw_pwm.value = 1;
+		gpio_write(&sw_pwm);
 		if (g_Settings[SW_PWM_CH].duty_cycle <= MAX_DUTY_CYCLE) {
-			unsigned long t_ns = ((MICRO_SEC * 10 * g_Settings[SW_PWM_CH].duty_cycle) / (g_Settings[SW_PWM_CH].frequency));
-			ktime_t t2 = ktime_set( 0, t_ns );
-			hrtimer_start(&tm2, t2, HRTIMER_MODE_REL);
+			unsigned long t_ns = ((MICRO_SEC * 10 * g_Settings[SW_PWM_CH].duty_cycle) / (g_Settings[SW_PWM_CH].frequency)); //calculate time when to generate falling edge
+			ktime_t t2 = ktime_set( 0, t_ns ); //convert time from nanoseconds into ktime_t
+			hrtimer_start(&tm2, t2, HRTIMER_MODE_REL); //start timer2 which expires after t2 (dutycycle) (let timer2 create falling edge)
 		}
 	}
 	else {
-		gpio_set_value(g_Settings[SW_PWM_CH].pin, 0);
+		sw_pwm.value = 0;
+		gpio_write(&sw_pwm);
 	}
 	return HRTIMER_RESTART;
 }
@@ -56,24 +62,12 @@ enum hrtimer_restart cb1(struct hrtimer *t) {
 /* falling edge of software pwm */
 enum hrtimer_restart cb2(struct hrtimer *t) {
 
-	gpio_set_value(g_Settings[SW_PWM_CH].pin, 0);
+	sw_pwm.value = 0;
+	gpio_write(&sw_pwm);	
 	return HRTIMER_NORESTART;
 }
 /* end of software pwm code */
 
-
-
-/* start of hardware pwm code */
-static void SetGPIOFunction(int GPIO, int functionCode) //todo remove this code and use gpio from stefan
-{
-	int registerIndex = GPIO / 10;
-	int bit = (GPIO % 10) * 3;
-
-	unsigned oldValue = s_pGpioRegisters->GPFSEL[registerIndex];
-	unsigned mask = 0b111 << bit;
-	printk("Changing function of GPIO%d from %x to %x\n", GPIO, (oldValue >> bit) & 0b111, functionCode);
-	s_pGpioRegisters->GPFSEL[registerIndex] = (oldValue & ~mask) | ((functionCode << bit) & mask);
-}
 
 void configHardwarePwm(void)
 {
@@ -81,6 +75,9 @@ void configHardwarePwm(void)
 	int period;
 	int countDuration;
 	int divisor;
+	unsigned long flags;
+	trace("");
+	spin_lock_irqsave( &g_Lock, flags ); 
 
 	//stop clock and waiting for busy flag doesn't work, so kill clock
 	s_ClockRegisters->PWMCTL = 0x5A000000 | (1 << 5);
@@ -122,15 +119,20 @@ void configHardwarePwm(void)
 	{
 		s_PwmRegisters->CTL = 0;  /* turn pwm off */
 	}
+	spin_unlock_irqrestore( &g_Lock, flags );
 }
 
 
 void update_duty_cycle(void)
-{
+{       
+	unsigned long flags;
 	int dutyCycle = g_Settings[HW_PWM_CH].duty_cycle;
 	int newCount = (((COUNTS * 1000) / 100) * dutyCycle) / 1000;
+	trace("");
+	spin_lock_irqsave( &g_Lock, flags );
 	trace("newCount = %d",newCount);
 	s_PwmRegisters->DAT1=newCount; //new dutyCycle
+	spin_unlock_irqrestore( &g_Lock, flags );
 }
 /* end of hardware pwm code */
 
@@ -162,11 +164,15 @@ int pwm_set_settings(struct pwm_settings* arg)
 	{
 		if (g_Settings[SW_PWM_CH].pin != arg->pin) //is the software pwm pin has changed
 		{
-			gpio_set_value(g_Settings[SW_PWM_CH].pin, 0); 
-			gpio_free(g_Settings[SW_PWM_CH].pin);	 //free old gpio pin
+			//turn old gpio pin off
+			sw_pwm.pinNr = g_Settings[SW_PWM_CH].pin;
+			sw_pwm.value = 0;
+			gpio_write(&sw_pwm);
 
-			gpio_request(arg->pin, "soft_pwm_gpio"); //setup new gpio pin
-			gpio_direction_output(arg->pin, 1);
+			//turn new gpio pin on
+			sw_pwm.pinNr = arg->pin;
+			sw_pwm.function = OUTPUT;
+			gpio_set_config(&sw_pwm);
 		}
 	}
 	g_Settings[arg->channel].channel    = arg->channel;
@@ -373,15 +379,20 @@ static void software_pwm_init(void)
 	g_Settings[SW_PWM_CH].duty_cycle = 0;
 	g_Settings[SW_PWM_CH].enabled    = FALSE; 
 
-	t_ns = (NANO_SEC)/DEFAULT_FREQ;
-	hrtimer_init(&tm1, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	t_ns = (NANO_SEC)/DEFAULT_FREQ; 
+	hrtimer_init(&tm1, CLOCK_MONOTONIC, HRTIMER_MODE_REL); //initialize timer tm1
 	hrtimer_init(&tm2, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-	t1 = ktime_set( 0, t_ns );
-	tm1.function = &cb1;
-	tm2.function = &cb2;
-	gpio_request(g_Settings[SW_PWM_CH].pin, "soft_pwm_gpio");
-	gpio_direction_output(g_Settings[SW_PWM_CH].pin, 1);
-	hrtimer_start(&tm1, t1, HRTIMER_MODE_REL);
+	t1 = ktime_set( 0, t_ns ); //set ktime_t variable from a seconds/nanoseconds value
+	tm1.function = &cb1; //set callback function for timer1
+	tm2.function = &cb2; //set callback function for timer2
+
+	//initialize sw pwm gpio pin
+	sw_pwm.pinNr = g_Settings[SW_PWM_CH].pin;
+	//sw_pwm.value = 0;
+	sw_pwm.function = OUTPUT; 
+	gpio_set_config(&sw_pwm);
+
+	hrtimer_start(&tm1, t1, HRTIMER_MODE_REL); //start timer tm1, with t1 as expire time, in relative mode
 }
 
 static void software_pwm_exit(void)
@@ -394,8 +405,10 @@ static void software_pwm_exit(void)
 	{
 		hrtimer_cancel(&tm2);
 	}
-	gpio_set_value(g_Settings[SW_PWM_CH].pin, 0);
-	gpio_free(g_Settings[SW_PWM_CH].pin);
+	//free sw pwm gpio pin
+	sw_pwm.pinNr = g_Settings[SW_PWM_CH].pin;
+	sw_pwm.value = 0;
+	gpio_write(&sw_pwm);
 }
 
 
@@ -407,12 +420,13 @@ static void hardware_pwm_init(void)
 	g_Settings[HW_PWM_CH].duty_cycle = 0;
 	g_Settings[HW_PWM_CH].enabled    = FALSE;
 
-	s_pGpioRegisters = (struct GpioRegisters*) __io_address(GP_BASE); //todo use stefan's gpio
 	s_PwmRegisters   = (struct PwmRegisters*)ioremap(PWM_BASE, sizeof(struct PwmRegisters));     
 	s_ClockRegisters = (struct ClockRegisters*)ioremap(CLOCK_BASE, sizeof(struct ClockRegisters)); 
 
-	SetGPIOFunction(DEFAULT_PWM_PIN, 0b000); //Configure the pin as input (default)
-	SetGPIOFunction(DEFAULT_PWM_PIN, 0b010); //Configure the pin as pwm pin
+	//configure hw pwm pin (alt5)
+	hw_pwm.pinNr = g_Settings[HW_PWM_CH].pin;
+	hw_pwm.function = ALT5;
+	gpio_set_config(&hw_pwm);
 
 	configHardwarePwm();
 
@@ -421,7 +435,9 @@ static void hardware_pwm_init(void)
 
 static void hardware_pwm_exit(void)
 {
-	SetGPIOFunction(DEFAULT_PWM_PIN, 0); //Configure the pin as input 
+	//Configure the pin as input 
+	hw_pwm.function = INPUT;
+	gpio_set_config(&hw_pwm);
 }
 
 
