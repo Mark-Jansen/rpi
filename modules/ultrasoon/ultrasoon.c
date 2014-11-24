@@ -10,7 +10,7 @@
 
 #define DRV_NAME			"ultrasoon"
 #define DRV_REV				"r1"
-#define ultrasoon_MAJOR		249
+#define ultrasoon_MAJOR			 0
 
 #define trace(format, arg...) do { if( debug & 1 ) pr_info( DRV_NAME ": %s: " format "\n", __FUNCTION__, ## arg ); } while (0)
 #define info(format, arg...) pr_info( DRV_NAME ": " format "\n", ## arg )
