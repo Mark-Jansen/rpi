@@ -10,7 +10,9 @@ PREFIX = $(shell echo `pwd`)/../build/modules/
 .PHONY: all clean
 
 all:
-	@for T in $(TARGETS); do \
+	@touch $(PREFIX)/Module.symvers; \
+	for T in $(TARGETS); do \
+		echo "Building $$T"; \
 		cp $(PREFIX)/Module.symvers $$T; \
 		${MAKE} -s -C $$T;  \
 		${MAKE} -s -C $$T PREFIX=$(PREFIX) install; \

@@ -14,12 +14,14 @@ all: generic balancer
 .PHONY: generic all clean
 
 generic: generic/*.cpp
-	@cd generic; \
+	@echo "Building generic"; \
+	cd generic; \
 	$(CROSS_COMPILE)g++ -c *.cpp -I../modules -std=c++11; \
 	cd ..; \
-	ar -cvq libgeneric.a generic/*.o;
+	ar -cq libgeneric.a generic/*.o;
 
 balancer: main.cpp Gyro.cpp generic
+	@echo "Building balancer"; \
 	$(CROSS_COMPILE)g++ main.cpp Gyro.cpp libgeneric.a -o ../build/balancer -I../modules -std=c++11 -lpthread
 
 clean:
