@@ -1,21 +1,20 @@
 
 # try to use the environment variable of BUILDROOT if it's defined,
 # otherwise use a hardcoded path
-ifeq "$(BUILDROOT)" ""
-	L_BUILDROOT:=$(HOME)/el32-buildroot/
-else
-	L_BUILDROOT:=$(BUILDROOT)
-endif
-
+#ifeq "$(BUILDROOT)" ""
+#	L_BUILDROOT:=$(HOME)/el32-buildroot/
+#else
+#	L_BUILDROOT:=$(BUILDROOT)
+#endif
+L_BUILDROOT:=$(HOME)/buildroot/
 CROSS_COMPILE:=$(L_BUILDROOT)/output/host/usr/bin/arm-linux-
 
-all: adc_test
+all: motor_driver_test
 
 .PHONY: all, clean
 
-adc_test: adc_test.cpp
-	$(CROSS_COMPILE)g++ adc_test.cpp -o ../build/adc_test -I../modules
+motor_driver_test: motor_driver_test.cpp
+	$(CROSS_COMPILE)g++ motor_driver_test.cpp -o ../build/motor_driver_test_RPI -I../modules
 
 clean:
-	rm -f *.o ../build/adc_test
-
+	rm -f *.o ../build/motor_driver_test_RPI

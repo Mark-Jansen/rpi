@@ -51,7 +51,7 @@ int motor_driver_set_config(struct motor_driver_setting* arg)
 	pwm_setting.enabled =arg->pwm_enable;
 	pwm_setting.frequency = arg->pwm_frequency;
 	pwm_setting.duty_cycle = arg->pwm_duty_cycle;
-	if (((gpio_write(&IN1_pin)) & (gpio_write(&IN2_pin)) &  (pwm_set_settings(&pwm_setting))) == 0){
+	if (((gpio_write(&IN1_pin)) && (gpio_write(&IN2_pin)) &&  (pwm_set_settings(&pwm_setting))) == 0){
 	spin_unlock_irqrestore( &g_Lock, flags );
 	return 0;
 	}else{

@@ -50,6 +50,8 @@ void showMenu( void )
 
 int write(int fd,struct motor_driver_setting* config)
 {	
+	printf ("MotorApinL: %d \n", motor_A.direction_pinL);
+	printf ("MotorApinR: %d \n", motor_A.direction_pinR);
 	if( ioctl(fd, MOTOR_DRIVER_SET_CONFIG ,config ) == -1) { 
  		perror( "ioctl set" ); 
  		close( fd ); 
@@ -60,6 +62,8 @@ int write(int fd,struct motor_driver_setting* config)
 
 int setSpeed(int fd, struct motor_driver_setting* config)
 {
+	printf ("dutycycle_motor_A: %d \n", motor_A.pwm_duty_cycle);
+
 	if( ioctl(fd, MOTOR_SETSPEED,config ) == -1) { 
  		perror( "set speed" ); 
  		close( fd ); 
@@ -78,7 +82,7 @@ void init_motor_driver_setting()
 		motor_A.pwm_channel = SW_PWM;
 		motor_A.pwm_pinnr = 17;
 		motor_A.pwm_enable = 1;
-		motor_A.pwm_frequency = 0;
+		motor_A.pwm_frequency = 20000;
 		motor_A.pwm_duty_cycle = 0;
 		
 		motor_B.direction_in1_pinnr = 24;
@@ -88,8 +92,9 @@ void init_motor_driver_setting()
 		motor_B.pwm_channel = HW_PWM;
 		motor_B.pwm_pinnr = 18;
 		motor_B.pwm_enable = 1;
-		motor_B.pwm_frequency = 0;
+		motor_B.pwm_frequency = 20000;
 		motor_B.pwm_duty_cycle = 0;	
+		
 }
 
 // =================================================================================
@@ -116,7 +121,8 @@ int main()
 	}
 	
 	init_motor_driver_setting();
-	
+	write(fd,&motor_A);
+	write(fd,&motor_B);
 	while(!close_menu)
 	{
 		showMenu();
@@ -127,7 +133,7 @@ int main()
 		switch(choice)
 		{
 			case '1':
-				cout << "Set duty cycle Motor A,[0-100]" << endl;
+				cout << "Set duty cycle Motor A,[0-100]" << endl;			
 				cin >> dutycycle_motor_A;
 				cin.ignore();
 				motor_A.pwm_duty_cycle = dutycycle_motor_A;
@@ -136,6 +142,7 @@ int main()
 			case '2':
 				cout << "Set direction motor A,[L] or [R]" << endl;
 				cin >> direction_A;
+				cin.ignore();
 				if (!( direction_A != 'L' && direction_A != 'l'))
 				{
 					motor_A.direction_pinL = 1;
@@ -159,6 +166,7 @@ int main()
 			case '4':
 				cout << "Set direction motor B,[L] or [R]" << endl;
 				cin >> direction_B;
+				cin.ignore();
 				if (!( direction_B != 'L' && direction_B != 'l'))
 				{
 					motor_B.direction_pinL = 1;
