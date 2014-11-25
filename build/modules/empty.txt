@@ -1,2 +1,3 @@
 
-The created modules will be stored here
+The created modules will be stored here.
+And without this file git will not keep the folder structure :)

@@ -1,0 +1,5 @@
+FULL=`pwd`
+for f in $FULL/*.ko; do
+        ln -s $f /lib/modules/`uname -r`
+done
+depmod -a

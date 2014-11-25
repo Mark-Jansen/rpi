@@ -9,19 +9,13 @@ endif
 
 CROSS_COMPILE:=$(L_BUILDROOT)/output/host/usr/bin/arm-linux-
 
-all: adc_test test_ultra testpwm
+all: adc_test
 
 .PHONY: all, clean
 
 adc_test: adc_test.cpp
 	$(CROSS_COMPILE)g++ adc_test.cpp -o ../build/adc_test -I../modules
-	
-test_ultra: test_ultrasoon.cpp
-	$(CROSS_COMPILE)g++ test_ultrasoon.cpp -o ../build/test_ultrasoon -I../modules
-
-testpwm: testpwm.cpp
-	$(CROSS_COMPILE)g++ testpwm.cpp -o testpwm -I../modules
 
 clean:
-	rm -f *.o ../build/adc_test ../build/testpwm
+	rm -f *.o ../build/adc_test
 
