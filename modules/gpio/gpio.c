@@ -1,4 +1,19 @@
+// =================================================================================
+// ====                                                                         ====
+// ==== File      : gpio.c					                                    ====
+// ====                                                                         ====
+// ==== Function  : gpio_driver                   	                            ====
+// ====                                                                         ====
+// ==== Author    : Stefan van Nunen    			                            ====
+// ====                                                                         ====
+// ==== History   : Version 1.00                                                ====
+// ====             								                            ====
+// ====                     							                        ====
+// =================================================================================
 
+// =================================================================================
+// ====   I N C L U D E S                                                       ====
+// =================================================================================
 #include <linux/fs.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
@@ -7,6 +22,10 @@
 #include <asm/io.h>
 #include <mach/platform.h>
 
+
+// =================================================================================
+// ====   Defines	                                                            ====
+// =================================================================================
 #define DRV_NAME		"gpio"
 #define DRV_REV			"r1"
 #define DRV_MAJOR		0
@@ -18,6 +37,10 @@
 #define warning(format, arg...) pr_warn( DRV_NAME ": " format "\n", ## arg )
 #define error(format, arg...) pr_err( DRV_NAME ": " format "\n", ## arg )
 
+
+// =================================================================================
+// ====   S T R U C T S                                                         ====
+// =================================================================================
 static int g_Major = 0;
 static struct class* g_Class = NULL;
 static struct device* g_Device = NULL;
@@ -57,9 +80,9 @@ int gpio_set_config(struct gpio_status* arg)
 	bit = (arg->pinNr % 10) * 3	;							// juist pin ivm 3 bits per pin voor functie
 	mask1 = 0b111 << bit;									// mask voor 3 bits van het juiste pinNr
 	mask2 = oldRegister & ~mask1;							// forceer de 3 bits van gekozen pinNr op 0
-	mask3 = (arg->value << bit) & mask1;					// mask voor het setten van de juiste waarde op pin nr
-	mask4 = mask2 | mask3;								// zet de 
-	gpioRegister->GPFSEL[registerIndex] = mask4;		// geef gekozen pinNr juist waarde	
+	mask3 = (arg->function  << bit) & mask1;					// mask voor het setten van de juiste waarde op pin nr
+	mask4 = mask2 | mask3;									// zet de overige bits weer in de oorspronkelijke stond terug
+	gpioRegister->GPFSEL[registerIndex] = mask4;			// geef gekozen pinNr juist waarde	
 		
 	spin_unlock_irqrestore( &g_Lock, flags );
 	return 0;
@@ -83,12 +106,12 @@ int gpio_read(struct gpio_status* arg)
 	spin_lock_irqsave( &g_Lock, flags );
 	
 	// check right register
-	if ((gpioPin > 0) && (gpioPin < 54))	// GPIO Pin is available
+	if ((gpioPin >= 0) && (gpioPin < 54))	// GPIO Pin is available
 	{
-		gplevregister = gpioPin/32;
-		mask = 1 << gpioPin;	
-		gplevValue = gpioRegister->GPLEV[gplevregister];
-		arg->value = (gplevValue & mask) >> gpioPin;
+		gplevregister = gpioPin/32;							// bepaal het goede register
+		mask = 1 << gpioPin;								// mask voor de juiste gpio pin
+		gplevValue = gpioRegister->GPLEV[gplevregister];	// lees het goed regiser uit
+		arg->value = (gplevValue & mask) >> gpioPin;		// lees de goede gpio pin uit en shift hem zodat er alleen 1 of 0 uitkomt
 	}
 	else
 	{
@@ -119,7 +142,7 @@ int gpio_write(struct gpio_status* arg)
 	// check right register
 	if ((gpioPin > 0) && (gpioPin < 54))	// GPIO Pin is available
 	{
-		registerNr = gpioPin/32;
+		registerNr = gpioPin/32;			// bepaal het goede register
 	}
 	else
 	{
@@ -130,11 +153,11 @@ int gpio_write(struct gpio_status* arg)
 	mask = 1 << gpioPin;
 	if (outputvalue)	// for set to 1 use GPSET
 	{	
-		gpioRegister->GPSET[registerNr] = mask;
+		gpioRegister->GPSET[registerNr] = mask;	// zet de juiste gpio pin op 1 
 	}
 	else				// for set to 0 use GPCLR
 	{
-		gpioRegister->GPCLR[registerNr] = mask;
+		gpioRegister->GPCLR[registerNr] = mask;	// zet de juiste gpio pin op 0
 	}
 	
 	spin_unlock_irqrestore( &g_Lock, flags );
@@ -191,39 +214,25 @@ static const struct file_operations fops = {
 	.open				= gpio_open,
 	.release			= gpio_release,
 	.unlocked_ioctl		= gpio_ioctl,
-//	.read				= gpio_read,
-//	.write				= gpio_write,
 };
 
 
 //sysfs
-static ssize_t show_status(struct device *dev, struct device_attribute *attr, char *buf)
+static ssize_t read_gpio(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	struct gpio_status status;
-	status.pinNr = 2;
+	int ret;
 	trace("");
-	if( !gpio_read( &status ) ) {
-		return snprintf(buf, PAGE_SIZE, "Status: %i\n", status.pinNr);
+	if( sscanf(buf, "%d", &status.pinNr) > 1 ) {
+		ret = ( gpio_read( &status  ));
+		return snprintf(buf, PAGE_SIZE, "gpioPin %i  \t has value \t: %i\n",status.value, ret);		
+	} else {
+		error( "error pinnr not available\n" );
 	}
 	return 0;
 }
 
-static ssize_t store_status(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
-{
-	struct gpio_status status;
-	trace("");
-	if( sscanf(buf, "%d", &status.pinNr) == 1 ) {
-		if( gpio_read( &status ) ) {
-			error( "error setting status\n" );
-		}
-	} else {
-		error( "error reading status\n" );
-	}
-	return count;
-}
-
-static DEVICE_ATTR( status, S_IWUSR | S_IRUGO, show_status, store_status );
-
+static DEVICE_ATTR( status, S_IWUSR | S_IRUGO, read_gpio, NULL );
 
 static int __init gpio_init(void)
 {

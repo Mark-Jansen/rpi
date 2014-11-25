@@ -1,7 +1,15 @@
 
 # add each new target to 'TARGETS'
 # order is important, if battery depends on adc, adc should be first!
+<<<<<<< HEAD
 TARGETS = adc \ battery \ gpio \ pwm \ motor_driver
+=======
+TARGETS = adc \
+		battery \
+		gpio \
+		led \
+		ultrasoon
+>>>>>>> master
 
 PREFIX = $(shell echo `pwd`)/../build/modules/
 

@@ -1,10 +1,10 @@
 
-MODULE_NAME = gpio
+MODULE_NAME = ultrasoon
 
 # try to use the environment variable of BUILDROOT if it's defined,
 # otherwise use a hardcoded path
 ifeq "$(BUILDROOT)" ""
-	L_BUILDROOT:=$(HOME)/buildroot/
+	L_BUILDROOT:=$(HOME)/buildroot
 else
 	L_BUILDROOT:=$(BUILDROOT)
 endif
@@ -20,7 +20,6 @@ CC=$(CROSS_CC)
 PWD:=$(shell pwd)
 EXTRA_CFLAGS += -DEXPORT_SYMTAB
 obj-m += $(MODULE_NAME).o
-
 
 all:
 	$(MAKE) CROSS_COMPILE=$(CROSS_COMPILE) ARCH=$(ARCH) -C $(KDIR) SUBDIRS=$(PWD) modules
