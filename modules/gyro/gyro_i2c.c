@@ -16,6 +16,8 @@
 #error "I2C should be enabled in the kernel!"
 #endif
 
+#define GYRO_ADDRESS		0x69
+
 // i2c client & mutex to protect it, we cannot use a spinlock here, this causes problems with the i2c functions.
 static struct i2c_client *g_Client;
 static DEFINE_MUTEX(g_I2CLock);
@@ -38,15 +40,21 @@ static int i2c_write( char* buf, int count )
 static int i2c_read( unsigned char address, char* buf, int count )
 {
 	int ret = -ENODEV;
+	struct i2c_msg msg[2];
 	trace("");
 	mutex_lock( &g_I2CLock );
 	if( g_Client ) {
-		if( 1 == i2c_master_send( g_Client, &address, 1 ) ) {
-			ret = i2c_master_recv( g_Client, buf, count );
-		}
+		msg[0].addr = msg[1].addr = GYRO_ADDRESS;
+		msg[0].flags = 0;
+		msg[0].len = 1;
+		msg[0].buf = &address;
+		msg[1].flags = I2C_M_RD;
+		msg[1].len = count;
+		msg[1].buf = buf;
+		ret = i2c_transfer( g_Client->adapter, msg, 2 );
 	}
 	mutex_unlock( &g_I2CLock );
-	return (count == ret) ? 0 : ret;
+	return (2 == ret) ? 0 : ret;
 }
 
 // read the gyro chip with i2c.
@@ -65,7 +73,6 @@ int gyro_read_device(struct gyro_data* data)
 	data->gyro_x = buf[8] << 8 | buf[9];
 	data->gyro_y = buf[10] << 8 | buf[11];
 	data->gyro_z = buf[12] << 8 | buf[13];
-
 	return 0;
 }
 
@@ -88,7 +95,7 @@ static int gyro_i2c_remove( struct i2c_client *client )
 
 // define the i2c address the chip is registered on.
 static struct i2c_board_info gyro_i2c_board_info = {
-	I2C_BOARD_INFO("MPU6050", 0x69),
+	I2C_BOARD_INFO("MPU6050", GYRO_ADDRESS),
 	.platform_data = &gyro_i2c_board_info,
 };
 
@@ -127,7 +134,6 @@ static int gyro_init_settings(void)
 	}
 	
 	// reset to defaults, disable sleep.
-	//ret |= gyro_write_setting( REG_PWR_MGMT_1, 0x80 );
 	ret |= gyro_write_setting( REG_PWR_MGMT_1, 0x00 );
 	
 	// Sample rate to 1000 / (1 + 1) = 500Hz
@@ -138,9 +144,6 @@ static int gyro_init_settings(void)
 	ret |= gyro_write_setting( REG_GYRO_CONFIG, 0x08 );
 	// disable accel self tests, scale of +-4g, no DHPF
 	ret |= gyro_write_setting( REG_ACCEL_CONFIG, 0x08 );
-
-
-	
 
 	if( ret ) {
 		error("writing defaults");
