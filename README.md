@@ -73,8 +73,7 @@ make clean && make
 Packages voor Arch linux
 ===
 ```
-sudo pacman -S rsync wget cpio python unzip bc subversion ncurses makepasswd parted dosfstools
-sudo ln -s /usr/bin/makepassws /usr/bin/mkpasswd
+sudo pacman -S rsync wget cpio python unzip bc subversion ncurses parted dosfstools
 
 wget https://aur.archlinux.org/packages/mu/multipath-tools-git/multipath-tools-git.tar.gz
 tar -xvf multipath-tools-git.tar.gz
