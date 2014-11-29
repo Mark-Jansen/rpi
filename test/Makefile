@@ -25,7 +25,7 @@ endif
 
 CROSS_COMPILE:=$(L_BUILDROOT)/output/host/usr/bin/arm-linux-
 
-all: adc_test test_ultra
+all: adc_test test_ultra testpwm
 
 .PHONY: all, clean
 
@@ -36,5 +36,13 @@ test_ultra: test_ultrasoon.cpp
 	$(CROSS_COMPILE)g++ test_ultrasoon.cpp -o ../build/test_ultrasoon -I../modules
 >>>>>>> master
 
+testpwm: testpwm.cpp
+	$(CROSS_COMPILE)g++ testpwm.cpp -o testpwm -I../modules
+
 clean:
+<<<<<<< HEAD
 	rm -f *.o ../build/motor_driver_test_RPI
+=======
+	rm -f *.o ../build/adc_test ../build/testpwm
+
+>>>>>>> 5ef1ffc02771326e2a35de72a119c917f935b977

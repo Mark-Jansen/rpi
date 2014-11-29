@@ -1,15 +1,17 @@
 #ifndef PWM_H
 #define PWM_H
 
+/* always initialize channel to 0 or 1, before changing any other setting */
 struct pwm_settings {
 	int  channel;				//channel 0 or 1 (channel 0 is hw_pwm / channel 1 is soft_pwm)  
 	int  pin;                   //hardware pwm is on gpio18 (pin 12) and cannot be changed!, software pwm pin can be changed.   
 	int  enabled;				//turn pwm on/off
-	int  frequency;				//0..20000 (default=1000)
+	int  frequency;				//0..25000Hz (default=25kHz)
 	int  duty_cycle;            //0..100%
 };
 
 
+<<<<<<< HEAD
 #define THERMIOC_MAGIC_PWM			   'P'
 
 #define PWM_SET_SETTINGS           _IOW(THERMIOC_MAGIC_PWM,  0, struct pwm_settings)
@@ -30,6 +32,12 @@ struct pwm_settings {
 #define PWM_GET_DUTY_CYCLE_CH1	   _IOR(THERMIOC_MAGIC_PWM, 11, int )
 #define PWM_SET_FREQUENCY_CH1      _IOW(THERMIOC_MAGIC_PWM, 12, int )
 #define PWM_GET_FREQUENCY_CH1	   _IOR(THERMIOC_MAGIC_PWM, 13, int )				
+=======
+#define PWM_THERMIOC_MAGIC			'P'
+
+#define PWM_SET_SETTINGS           _IOW(PWM_THERMIOC_MAGIC,  0, struct pwm_settings)
+#define PWM_GET_SETTINGS           _IOR(PWM_THERMIOC_MAGIC,  1, struct pwm_settings)
+>>>>>>> 5ef1ffc02771326e2a35de72a119c917f935b977
 
 
 //exported symbols:

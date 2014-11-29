@@ -1,7 +1,5 @@
-****
-
 rpi
-===
+=====
 
 Directory structure:
 
@@ -58,7 +56,7 @@ make menuconfig
 - Build options -> Host dir: $(BASE_DIR)/host
 ```
 make clean && make
-
+```
 
 Buildroot bouwen met externe toolchain (semi-automatisch)
 ===
@@ -70,4 +68,23 @@ cp /mnt/hgfs/rpi/config/step1.config .config
 make clean && make
 cp /mnt/hgfs/rpi/config/step2.config .config
 make clean && make
+```
+
+Packages voor Arch linux
+===
+```
+sudo pacman -S rsync wget cpio python unzip bc subversion ncurses parted dosfstools
+
+wget https://aur.archlinux.org/packages/mu/multipath-tools-git/multipath-tools-git.tar.gz
+tar -xvf multipath-tools-git.tar.gz
+cd multipath-tools-git
+makepkg -s
+sudo pacman -U multipath-tools-git-*.pkg.tar.xz
+
+wget https://aur.archlinux.org/packages/de/debian-whois-mkpasswd/debian-whois-mkpasswd.tar.gz
+tar -xvf debian-whois-mkpasswd.tar.gz
+cd debian-whois-mkpasswd-git
+edit PKGBUILD to point to version 5.2.2 instead of 5.2.1
+makepkg -s
+sudo pacman -U debian-whois-mkpasswd-*.pkg.tar.xz
 ```

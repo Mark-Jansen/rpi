@@ -19,7 +19,7 @@ CC=$(CROSS_CC)
 
 PWD:=$(shell pwd)
 EXTRA_CFLAGS += -DEXPORT_SYMTAB
-obj-m += $(MODULE_NAME).o pwm_test.o
+obj-m += $(MODULE_NAME).o
 
 
 all:
