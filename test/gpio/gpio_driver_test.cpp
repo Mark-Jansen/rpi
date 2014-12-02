@@ -42,6 +42,7 @@ void showMenu( void )
 	printf("\n[1] Set config function");
 	printf("\n[2] write value");
 	printf("\n[3] read value");
+	printf("\n[4] Pull up/down");
 	printf("\n[5] Stop");
 	printf("\n\nKeuze : ");
 }
@@ -62,6 +63,29 @@ void showFunctionMenu( void )
 	printf("\n\nKeuze : ");
 }
 
+void showEventDetectMenu( void )
+{
+	printf("\n\nMENU");
+	printf("\n=============");
+	printf("\n[0] NO_DETECT");
+	printf("\n[1] RISING_EDGE_DETECT");
+	printf("\n[2] FALLING_EDGE_DETECT");
+	printf("\n[3] LOW_DETECT");
+	printf("\n[4] HIGH_DETECT");
+	printf("\n[5] ASYNC_RISING_EDGE_DETECT");
+	printf("\n[6] ASYNC_FALLING_EDGE_DETECT");
+	printf("\n\nKeuze : ");
+}
+
+void showPullUpDownMenu( void )
+{
+	printf("\n\nMENU");
+	printf("\n=============");
+	printf("\n[0] PULL OFF");
+	printf("\n[1] PULL_DOWN_ENABLE");
+	printf("\n[2] PULL_UP_ENABLE");
+	printf("\n\nKeuze : ");
+}
 
 // =================================================================================
 // ====   MAIN   F U N C T I O N                                                ====
@@ -76,8 +100,10 @@ int main()
 	bool close_menu = false;
 	char choice = 0;
 	int pinnr = 0;
-	int function = 0;
+	char function_choice = 0;
 	int value = 0;
+	int detect_function = 0;
+	int pull = 0;
 	
 	int fd = open("/dev/gpio", O_RDWR);
 	if (fd == -1) {
@@ -100,12 +126,16 @@ int main()
 				gpio_test.pinNr = pinnr;
 				
 				showFunctionMenu();
-				cin >> function;
+				cin >> function_choice;
 				cin.ignore();
-				switch(choice)
+				switch(function_choice)
 				{
 					case '1':
 					gpio_test.function = INPUT;
+					showEventDetectMenu();
+					cin >> detect_function;
+					cin.ignore();
+					gpio_test.event_detect = detect_function;
 					break;
 					case '2':
 					gpio_test.function = OUTPUT;
@@ -165,14 +195,7 @@ int main()
 				cout << "pinnumber to read value" << endl;
 				cin >> pinnr;
 				cin.ignore();
-				gpio_test.function = INPUT;
 				gpio_test.pinNr = pinnr;
-				if( ioctl(fd, GPIO_SET_CONFIG, &gpio_test) == -1) 
-				{
-					perror( "ioctl GPIO_SET_CONFIG:  failed" );
-					close( fd );
-					return -1;
-				}
 				if( ioctl(fd, GPIO_READ, &gpio_test) == -1) 
 				{
 					perror( "ioctl GPIO_READ:  failed" );
@@ -181,6 +204,38 @@ int main()
 				}
 				cout << "value of gpiopin :" << gpio_test.pinNr << " = "<<  gpio_test.value << endl;
 				break;	
+			case '4':
+				cout << "pinnumber to set pull up/down" << endl;
+				cin >> pinnr;
+				cin.ignore();
+				gpio_test.pinNr = pinnr;
+				gpio_test.function = INPUT;
+				gpio_test.pinNr = pinnr;
+				showPullUpDownMenu();
+					cin >> pull;
+					cin.ignore();
+					if (pull == 0)
+					{
+						gpio_test.pull_up_down = PULL_OFF;
+					}
+					else if(pull == 1)
+					{
+						gpio_test.pull_up_down = PULL_DOWN_ENABLE;
+					}
+					else if(pull == 2)
+					{
+						gpio_test.pull_up_down = PULL_UP_ENABLE;
+					}
+				cout << "youre pinnumber = " << gpio_test.pinNr << endl;
+				cout << "youre function = " << gpio_test.function << endl;
+				cout << "youre pull up/down = " << gpio_test.pull_up_down << endl;
+				if( ioctl(fd, GPIO_SET_CONFIG, &gpio_test) == -1) 
+				{
+					perror( "ioctl GPIO_SET_CONFIG:  failed" );
+					close( fd );
+					return -1;
+				}	
+				break;
 			case '5':
 				close_menu = true;
 				close ( fd );

@@ -3,7 +3,7 @@
 #include <linux/platform_device.h>
 #include <linux/ioctl.h>
 #include <linux/uaccess.h>		//copy_[from/to]_user
-#include <linux/delay.h>
+#include <linux/delay.h> 
 
 #define LED_NAME		"led"
 #define LED_REV			"r1"
@@ -21,7 +21,6 @@ static int g_Major = 0;
 static struct class* g_Class = NULL;
 static struct device* g_Device = NULL;
 
-static DEFINE_SPINLOCK(g_Lock);
 struct gpio_status led;
 
 static int debug = 0;
@@ -31,27 +30,21 @@ MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
 
 int led_set_config(struct led_status* status)
 {
-	unsigned long flags;
 	int returnValue = 0;	
 	// make gpio_status struct and set values
 	led.pinNr = status->pinNr;
 	led.value = status->value;
 	led.function = OUTPUT;
 
-	trace("");
-	spin_lock_irqsave( &g_Lock, flags );
-	
 	// use gpio.c
 	returnValue = gpio_set_config(&led);
 
-	spin_unlock_irqrestore( &g_Lock, flags );
 	return returnValue;	
 }
 EXPORT_SYMBOL(led_set_config);
 
 int led_on(struct led_status* status)
 {
-	unsigned long flags;
 	int returnValue = 0;
 	
 	// make gpio_status struct and set values
@@ -59,13 +52,8 @@ int led_on(struct led_status* status)
 	led.value = ON;
 	led.function = OUTPUT;
 
-	trace("");
-	spin_lock_irqsave( &g_Lock, flags );
-	
 	// use gpio.c
 	returnValue = gpio_write(&led);
-	
-	spin_unlock_irqrestore( &g_Lock, flags );
 	
 	return returnValue;
 }
@@ -74,21 +62,15 @@ EXPORT_SYMBOL(led_on);
 
 int led_off(struct led_status* status)
 {
-	unsigned long flags;
 	int returnValue = 0;
 	
 	// make gpio_status struct and set values
 	led.pinNr = status->pinNr;
 	led.value = OFF;
 	led.function = OUTPUT;
-
-	trace("");
-	spin_lock_irqsave( &g_Lock, flags );
 		
 	// use gpio.c
 	returnValue = gpio_write(&led);
-	
-	spin_unlock_irqrestore( &g_Lock, flags );
 	
 	return returnValue;
 }
@@ -99,27 +81,28 @@ int led_blink(struct led_status* status)
 	int i = 0;
 	int ledToggle = 0;
 	int returnValue = 0;
-	unsigned long flags;
 		
 	// make gpio_status struct and set values
 	led.pinNr = status->pinNr;
 	led.value = OFF;
 	led.function = OUTPUT;
-
-	trace("");
-	spin_lock_irqsave( &g_Lock, flags );
-		
-	for(i=0; i<10; i++);
+	
+	for(i=0; i<10; i++)
 	{
-		// Here must be a delay/timer  // msleep(status->blinkTimer);
-		ledToggle = ~ledToggle;
+		udelay(status->blinkTimer);
+		if (ledToggle == 1)
+		{
+			ledToggle = 0;
+		}
+		else
+		{
+			ledToggle = 1;
+		}
+		printk(KERN_INFO "ledToggle = %i \n", ledToggle);
 		led.value = ledToggle;
-	
 		// use gpio.c
-		returnValue = gpio_write(&led);
+		returnValue = gpio_write(&led);		
 	}
-	
-	spin_unlock_irqrestore( &g_Lock, flags );
 	
 	return returnValue;	
 }
