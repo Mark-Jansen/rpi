@@ -1,8 +1,13 @@
 
 # add each new target to 'TARGETS'
+
 # order is important, if battery depends on adc, adc should be first!
 TARGETS = adc \
 		battery \
+		gpio \
+		led \
+		ultrasoon \
+		pwm \
 		gyro
 
 PREFIX = $(shell echo `pwd`)/../build/modules/
@@ -22,6 +27,8 @@ all:
 clean:
 	@rm -f $(PREFIX)/Module.symvers; \
 	for T in $(TARGETS); do  \
+		echo "Cleaning $$T"; \
 		${MAKE} -s -C $$T clean; \
 		rm -f $(PREFIX)/$$T.ko; \
-	done
+	done; \
+	rm -f common/.common.o.cmd common/common.o

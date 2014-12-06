@@ -9,18 +9,27 @@ endif
 
 CROSS_COMPILE:=$(L_BUILDROOT)/output/host/usr/bin/arm-linux-
 
-all: adc_test gyro_test
+all: adc_test test_ultra gyro_test testpwm
 
 .PHONY: all, clean
 
 adc_test: adc_test.cpp
 	@echo "Building adc_test"; \
 	$(CROSS_COMPILE)g++ adc_test.cpp ../application/generic/File.cpp -o ../build/adc_test -I../modules -I../application -std=c++11
+	
+test_ultra: test_ultrasoon.cpp
+	@echo "Building test_ultrasoon"; \
+	$(CROSS_COMPILE)g++ test_ultrasoon.cpp -o ../build/test_ultrasoon -I../modules
 
 gyro_test: gyro_test.cpp
 	@echo "Building gyro_test"; \
 	$(CROSS_COMPILE)g++ gyro_test.cpp ../application/generic/File.cpp -o ../build/gyro_test -I../modules -I../application -lpthread -std=c++11
 
+testpwm: testpwm.cpp
+	@echo "Building testpwm"; \
+	$(CROSS_COMPILE)g++ testpwm.cpp -o ../build/testpwm -I../modules
+
 clean:
-	rm -f *.o ../build/adc_test ../build/gyro_test
+	@echo "Cleaning test"; \
+	rm -f *.o ../build/adc_test ../build/testpwm ../build/gyro_test ../build/test_ultrasoon
 

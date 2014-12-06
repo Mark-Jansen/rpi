@@ -25,5 +25,6 @@ balancer: main.cpp Gyro.cpp generic
 	$(CROSS_COMPILE)g++ main.cpp Gyro.cpp libgeneric.a -o ../build/balancer -I../modules -std=c++11 -lpthread
 
 clean:
+	@echo "Cleaning generic / balancer"; \
 	rm -f *.o generic/*.o libgeneric.a ../build/balancer
 
