@@ -2,19 +2,24 @@
 #define APPLICATION_BATTERY_H
 
 #include "generic/File.h"
+#include "generic/Thread.h"
 
-class Battery
+class Battery : public Thread
 {
-  public:
-  Battery(void);
-  ~Battery();
-  void start(void);
-  void stop(void);
-  int getCharge(void);
+public:
+
+	Battery(void);
+	virtual ~Battery();
+
+protected:
+
+	int delayMS() const;
+	virtual void onBeforeRun();
+	virtual void onRun();
+
 
 private:	
-  File mSensor;
-  int charge;
+	File mSensor;
 };
 
 #endif // APPLICATION_BATTERY_H

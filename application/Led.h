@@ -5,18 +5,22 @@
 
 class Led
 {
-  public:
-  Led(int pinNr);
-  ~Led();
-  void on(void);
-  void off(void);
-  void blink(void);
-  int getStatus(void);
+public:
+	Led(int pinNr);
+	Led(int pinNr, int blinkTimer);
+	~Led();
+	void on(void);
+	void off(void);
+	void blink(void);
+	int getStatus(void);
+	int getBlinktimer(void);
+	void setBlinktimer(int blinkTimer);
 
 private:
-  File mSensor;
-  int status;
-  int pinNr;
+	File mSensor;
+	int status; //led is on, off or blinking
+	int pinNr;
+	int blinkTimer; 
 };
 
 #endif // APPLICATION_LED_H
