@@ -20,7 +20,7 @@ generic: generic/*.cpp
 	cd ..; \
 	ar -cq libgeneric.a generic/*.o;
 
-balancer: main.cpp Gyro.cpp generic
+balancer: main.cpp Gyro.cpp Led.cpp Ultrasoon.cpp Motor.cpp Battery.cpp generic
 	@echo "Building balancer"; \
 	$(CROSS_COMPILE)g++ main.cpp Gyro.cpp libgeneric.a -o ../build/balancer -I../modules -std=c++11 -lpthread
 
