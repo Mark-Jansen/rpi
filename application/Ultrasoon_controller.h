@@ -1,7 +1,23 @@
 #ifndef APPLICATION_ULTRASOON_CONTROLLER_H
 #define APPLICATION_ULTRASOON_CONTROLLER_H
 
-//TODO: thread reading in ultrasonic sensors
+#include "generic/File.h"
+#include "generic/Thread.h"
 
-#endif // APPLICATION_ULTRASOON_CONTROLLER_H
+class Ultrasoon_controller : public Thread
+{
+public:
+
+	Ultrasoon_controller(void);
+	virtual ~Ultrasoon_controller();
+
+protected:
+
+	int delayMS() const;
+	virtual void onBeforeRun();
+	virtual void onRun();
+
+
+};
+
 
