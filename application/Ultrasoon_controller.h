@@ -1,0 +1,7 @@
+#ifndef APPLICATION_ULTRASOON_CONTROLLER_H
+#define APPLICATION_ULTRASOON_CONTROLLER_H
+
+//TODO: thread reading in ultrasonic sensors
+
+#endif // APPLICATION_ULTRASOON_CONTROLLER_H
+
