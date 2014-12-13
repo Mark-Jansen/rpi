@@ -9,11 +9,30 @@ Motor::~Motor()
 {
 }
 
-void Motor::start(void)
+void Motor::setSpeed(int speed)
 {
 }
 
-void Motor::stop(void)
+int Motor::getSpeed(void)
+{
+}
+    
+void Motor::setDirection(int direction)
 {
 }
 
+int Motor::getDirection(void)
+{
+}
+	
+int Motor::readEncoder(void) //TODO
+{
+}
+
+void Motor::TurnOn(void)
+{
+}
+
+void Motor::TurnOff(void)
+{
+}
