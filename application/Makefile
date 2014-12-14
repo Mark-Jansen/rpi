@@ -34,5 +34,5 @@ balancer: main.cpp Ultrasoon_controller.cpp hardware generic
 
 clean:
 	@echo "Cleaning generic / balancer"; \
-	rm -f *.o generic/*.o libgeneric.a ../build/balancer
+	rm -f *.o generic/*.o libgeneric.a libhardware.a ../build/balancer
 

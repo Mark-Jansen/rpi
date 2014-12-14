@@ -2,7 +2,7 @@
 #define APPLICATION_GYRO_H
 
 #include <generic/File.h>
-#include "generic/Thread.h"
+#include <generic/Thread.h>
 
 class Gyro : public Thread
 {
