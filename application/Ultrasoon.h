@@ -2,10 +2,8 @@
 #define APPLICATION_ULTRASOON_H
 
 #include "generic/File.h"
-#include "generic/Thread.h"
 
-
-class Ultrasoon : public Thread
+class Ultrasoon
 {  
 public:
 	Ultrasoon(int triggerPin, int echoPin, int type); 
