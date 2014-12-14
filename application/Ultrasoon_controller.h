@@ -20,4 +20,6 @@ protected:
 
 };
 
+#endif // APPLICATION_ULTRASOON_CONTROLLER_H
+
 
