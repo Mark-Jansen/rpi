@@ -1,8 +1,8 @@
-#ifndef APPLICATION_GYRO_H
-#define APPLICATION_GYRO_H
+#ifndef HARDWARE_GYRO_H
+#define HARDWARE_GYRO_H
 
-#include "generic/File.h"
-#include "generic/Thread.h"
+#include <generic/File.h>
+#include <generic/Thread.h>
 #include "generic/Vec3.h"
 
 class Gyro : public Thread
@@ -33,4 +33,4 @@ private:
 	int mLastAngleTick;
 };
 
-#endif // APPLICATION_GYRO_H
+#endif // HARDWARE_GYRO_H
