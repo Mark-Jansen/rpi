@@ -1,6 +1,6 @@
 #include <iostream>
 #include <unistd.h>
-#include "Gyro.h"
+#include "hardware/Gyro.h"
 
 using std::cout;
 using std::endl;

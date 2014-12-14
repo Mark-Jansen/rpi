@@ -9,7 +9,7 @@ Ultrasoon::~Ultrasoon()
 {
 }
 
-Ultrasoon::getDistance(void)
+int Ultrasoon::getDistance(void)
 {
 }
 

@@ -1,14 +1,15 @@
 #ifndef APPLICATION_BATTERY_H
 #define APPLICATION_BATTERY_H
 
-#include "generic/File.h"
-#include "generic/Thread.h"
+#include <generic/File.h>
+#include <generic/Thread.h>
+#include "Led.h"
 
 class Battery : public Thread
 {
 public:
 
-	Battery(void);
+	Battery( Led& warningLed );
 	virtual ~Battery();
 
 protected:
@@ -18,8 +19,9 @@ protected:
 	virtual void onRun();
 
 
-private:	
+private:
 	File mSensor;
+	Led& mWarningLed;
 };
 
 #endif // APPLICATION_BATTERY_H

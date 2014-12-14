@@ -1,7 +1,10 @@
 #include "Motor.h"
 
-Motor::Motor(void)
+Motor::Motor( const Config& cfg )
 	: mSensor( "/dev/motor", O_RDWR )
+	, mConfig( cfg )
+	, mSpeed( 0 )
+	, mEnabled( 0 )
 {  
 }
 
@@ -29,10 +32,10 @@ int Motor::readEncoder(void) //TODO
 {
 }
 
-void Motor::TurnOn(void)
+void Motor::turnOn(void)
 {
 }
 
-void Motor::TurnOff(void)
+void Motor::turnOff(void)
 {
 }

@@ -1,7 +1,8 @@
 #include "Battery.h"
 
-Battery::Battery(void)
+Battery::Battery( Led& warningLed )
 	: mSensor( "/dev/battery", O_RDWR )
+	, mWarningLed( warningLed )
 {  
 }
 
@@ -11,7 +12,7 @@ Battery::~Battery()
 
 int Battery::delayMS() const
 {
-	return 100;
+	return 5 * 1000;
 }
 
 void Battery::onBeforeRun()

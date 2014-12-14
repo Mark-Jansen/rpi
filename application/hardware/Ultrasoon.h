@@ -1,7 +1,7 @@
 #ifndef APPLICATION_ULTRASOON_H
 #define APPLICATION_ULTRASOON_H
 
-#include "generic/File.h"
+#include <generic/File.h>
 
 class Ultrasoon
 {  
