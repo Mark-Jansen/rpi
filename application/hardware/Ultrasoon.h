@@ -1,5 +1,5 @@
-#ifndef APPLICATION_ULTRASOON_H
-#define APPLICATION_ULTRASOON_H
+#ifndef HARDWARE_ULTRASOON_H
+#define HARDWARE_ULTRASOON_H
 
 #include <generic/File.h>
 
@@ -18,5 +18,5 @@ private:
 	int type; //0= Front sensor , 1= Back sensor
 };
 
-#endif // APPLICATION_ULTRASOON_H
+#endif // HARDWARE_ULTRASOON_H
 

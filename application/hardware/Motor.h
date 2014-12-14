@@ -1,5 +1,5 @@
-#ifndef APPLICATION_MOTOR_H
-#define APPLICATION_MOTOR_H
+#ifndef HARDWARE_MOTOR_H
+#define HARDWARE_MOTOR_H
 
 #include <generic/File.h>
 
@@ -34,4 +34,4 @@ private:
 	int mEnabled;
 };
 
-#endif // APPLICATION_MOTOR_H
+#endif // HARDWARE_MOTOR_H

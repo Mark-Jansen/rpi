@@ -1,5 +1,5 @@
-#ifndef APPLICATION_BATTERY_H
-#define APPLICATION_BATTERY_H
+#ifndef HARDWARE_BATTERY_H
+#define HARDWARE_BATTERY_H
 
 #include <generic/File.h>
 #include <generic/Thread.h>
@@ -24,6 +24,6 @@ private:
 	Led& mWarningLed;
 };
 
-#endif // APPLICATION_BATTERY_H
+#endif // HARDWARE_BATTERY_H
 
 

@@ -1,5 +1,5 @@
-#ifndef APPLICATION_LED_H
-#define APPLICATION_LED_H
+#ifndef HARDWARE_LED_H
+#define HARDWARE_LED_H
 
 #include <generic/File.h>
 
@@ -23,4 +23,4 @@ private:
 	int blinkTimer; 
 };
 
-#endif // APPLICATION_LED_H
+#endif // HARDWARE_LED_H

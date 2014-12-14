@@ -1,5 +1,5 @@
-#ifndef APPLICATION_GYRO_H
-#define APPLICATION_GYRO_H
+#ifndef HARDWARE_GYRO_H
+#define HARDWARE_GYRO_H
 
 #include <generic/File.h>
 #include <generic/Thread.h>
@@ -23,4 +23,4 @@ private:
 	int mXOffset, mYOffset, mZOffset;
 };
 
-#endif // APPLICATION_GYRO_H
+#endif // HARDWARE_GYRO_H
