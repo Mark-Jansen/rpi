@@ -1,22 +1,30 @@
+#define _GLIBCXX_USE_NANOSLEEP		// otherwise we can't use sleep_for...
 #include "Gyro.h"
 #include <gyro/gyro.h>
 #include <cmath>
-#include <fcntl.h>
 #include <iostream>
 #include <iomanip>
 
-static float kGyroXSensitivity = 66.5f;
-static float kGyroYSensitivity = 66.5f;
-static float kGyroZSensitivity = 65.5f;
-static float kDt = 0.0025f;		// 1/400Hz
-static int kNumCalibrationSamples = 500;
+static const float kGyroSensitivity = 131;
+static int kNumCalibrationSamples = 10;
+
+static float kRad2Deg = 180 / M_PI;
+
+
+// TODO: move this to some generic util lib
+int tickCount()
+{
+	struct timespec ts;
+	clock_gettime( CLOCK_MONOTONIC, &ts );
+	int value = (static_cast<int>(ts.tv_sec) * 1000) + (static_cast<int>(ts.tv_nsec) / 1000000);
+	return value ? value : 1;
+}
+
 
 Gyro::Gyro()
 : mSensor( "/dev/gyro", O_RDWR )
-, mXOffset( 0 )
-, mYOffset( 0 )
-, mZOffset( 0 )
 {
+	reset();
 }
 
 Gyro::~Gyro()
@@ -24,31 +32,42 @@ Gyro::~Gyro()
 	stop();
 }
 
+void Gyro::reset()
+{
+	mInitialGyro = Vec3f();
+	mInitialAccel = Vec3f();
+
+	mLastAngle = Vec3f();
+	mLastTemperature = 0;
+	mLastAngleTick = 0;
+}
+
 int Gyro::delayMS() const
 {
-	return 100;
+	return 20;
 }
 
 void Gyro::calibrate()
 {
-	signed long XOUT = 0, YOUT = 0, ZOUT = 0;
+	reset();
 	gyro_data data;
 	int good_samples = 0;
+	mSensor.ioctl( GYRO_GET_DATA, data );		// discard the first sample
 	for( int n = 0; n < kNumCalibrationSamples; ++n ) {
 		if( mSensor.ioctl( GYRO_GET_DATA, data ) ) {
 			++good_samples;
-			XOUT += data.gyro_x;
-			YOUT += data.gyro_y;
-			ZOUT += data.gyro_z;
+			mInitialGyro += Vec3f( data.gyro_x, data.gyro_y, data.gyro_z );
+			mInitialAccel += raw2Accel( data.accel_x, data.accel_y, data.accel_z );
 		}
+		std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
 	}
 	if( good_samples != kNumCalibrationSamples ) {
 		std::cout << "Problem calibrating!!" << std::endl;
 	}
-	mXOffset = XOUT / good_samples;
-	mYOffset = YOUT / good_samples;
-	mZOffset = ZOUT / good_samples;
-	std::cout << "Calibration: x=" << mXOffset << ", y=" << mYOffset << ", z=" << mZOffset << std::endl;
+	mInitialGyro /= good_samples;
+	mInitialAccel /= good_samples;
+
+	//std::cout << "Calibration: " << mInitialGyro << std::endl;
 }
 
 void Gyro::onBeforeRun()
@@ -57,32 +76,47 @@ void Gyro::onBeforeRun()
 		std::cout << "Sensor not opened..." << std::endl;
 		stop();
 	}
-	if( mXOffset == 0 && mYOffset == 0 && mZOffset == 0 ) {
+	if( !mLastAngleTick ) {
 		calibrate();
+		mLastAngleTick = tickCount();
 	}
 }
 
+Vec3f Gyro::raw2Accel( float xout, float yout, float zout )
+{
+	float roll = atan2(yout, zout) * kRad2Deg;
+	float pitch = atan2(xout, sqrt(yout*yout + zout*zout)) * 180 / M_PI;
+	return Vec3f( roll, pitch, 0 );
+}
+
+// complementary filter.
 void Gyro::onRun()
 {
 	gyro_data data;
 	if( mSensor.ioctl( GYRO_GET_DATA, data ) ) {
-	
-		float xout = (float)data.accel_x;
-		float yout = (float)data.accel_y;
-		float zout = (float)data.accel_z;
-		
-		//float scalar = sqrt( xout * xout + yout * yout + zout * zout );
-		//xout /= scalar;
-		//yout /= scalar;
-		//zout /= scalar;
-		float roll = atan2(yout, zout) * 180 / M_PI;
-		float pitch = atan2(xout, sqrt(yout*yout + zout*zout)) * 180 / M_PI;
-		std::cout << "Accel: " << std::setw(10) << roll << ", " << std::setw(10) << pitch;
 
-		std::cout << ", Temperature: " << std::setw(10) << data.raw_temperature / 340.f + 36.53f;
-		float gyro_x = (data.gyro_x - mXOffset) / kGyroXSensitivity;
-		float gyro_y = (data.gyro_y - mYOffset) / kGyroYSensitivity;
-		float gyro_z = (data.gyro_z - mZOffset) / kGyroZSensitivity;
-		std::cout << ", Gyro: " << std::setw(10) << gyro_x << ", " << std::setw(10) << gyro_y << ", " << std::setw(10) << gyro_z << std::endl;
+		Vec3f accel = raw2Accel( data.accel_x, data.accel_y, data.accel_z ) - mInitialAccel;
+		//std::cout << "Accel: " << std::setw(10) << accel.x << ", " << std::setw(10) << accel.y;
+
+		mLastTemperature = data.raw_temperature / 340.f + 36.53f;
+		Vec3f rawGyro = Vec3f( data.gyro_x, data.gyro_y, data.gyro_z ) - mInitialGyro;
+		rawGyro /= kGyroSensitivity;
+
+		int tick = tickCount();
+		
+		float dt = (tick - mLastAngleTick) / 1000.0f;
+		Vec3f gyro = rawGyro * dt + mLastAngle;
+
+		//std::cout << ", Gyro: " << std::setw(10) << gyro.x << ", " << std::setw(10) << gyro.y << ", " << std::setw(10) << gyro.z;
+
+		float alpha = 0.96;
+		Vec3f angle = gyro * alpha + accel * (1.f - alpha);
+
+		std::cout << ", final: " << std::setw(10) << angle.x << ", " << std::setw(10) << angle.y;
+
+		mLastAngle = angle;
+		mLastAngleTick = tick;
+
+		std::cout << std::endl;
 	}
 }

@@ -6,7 +6,6 @@
 
 static int kNumSamples = 4000;
 
-// milliseconds
 int tickCount()
 {
 	struct timespec ts;
@@ -14,7 +13,6 @@ int tickCount()
 	int value = (static_cast<int>(ts.tv_sec) * 1000) + (static_cast<int>(ts.tv_nsec) / 1000000);
 	return value ? value : 1;
 }
-
 
 int main()
 {
