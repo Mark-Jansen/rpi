@@ -3,7 +3,7 @@
 
 #include <generic/File.h>
 #include <generic/Thread.h>
-#include "Led.h"
+class Led;
 
 class Battery : public Thread
 {

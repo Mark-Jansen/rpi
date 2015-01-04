@@ -12,10 +12,9 @@ public:
 
 private:
 	File mSensor;
-	int distance; 
-	int triggerPin;
-	int echoPin;
-	int type; //0= Front sensor , 1= Back sensor
+	int mTriggerPin;
+	int mEchoPin;
+	int mType; //0= Front sensor , 1= Back sensor
 };
 
 #endif // HARDWARE_ULTRASOON_H

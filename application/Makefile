@@ -28,9 +28,9 @@ hardware: hardware/*.cpp
 	ar -cq libhardware.a hardware/*.o;
 	
 
-balancer: main.cpp Ultrasoon_controller.cpp hardware generic
+balancer: *.cpp hardware generic
 	@echo "Building balancer"; \
-	$(CROSS_COMPILE)g++ main.cpp libhardware.a libgeneric.a -o ../build/balancer -I../modules -I. -std=c++11 -lpthread
+	$(CROSS_COMPILE)g++ *.cpp libhardware.a libgeneric.a -o ../build/balancer -I../modules -I. -std=c++11 -lpthread
 
 clean:
 	@echo "Cleaning generic / balancer"; \

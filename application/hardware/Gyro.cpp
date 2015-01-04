@@ -22,7 +22,7 @@ int tickCount()
 
 
 Gyro::Gyro()
-: mSensor( "/dev/gyro", O_RDWR )
+: mSensor( GYRO_DEVICE, O_RDWR )
 {
 	reset();
 }
@@ -62,18 +62,16 @@ void Gyro::calibrate()
 		std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
 	}
 	if( good_samples != kNumCalibrationSamples ) {
-		std::cout << "Problem calibrating!!" << std::endl;
+		std::cerr << "Problem calibrating!!" << std::endl;
 	}
 	mInitialGyro /= good_samples;
 	mInitialAccel /= good_samples;
-
-	//std::cout << "Calibration: " << mInitialGyro << std::endl;
 }
 
 void Gyro::onBeforeRun()
 {
 	if( !mSensor.isOpen() ) {
-		std::cout << "Sensor not opened..." << std::endl;
+		std::cerr << "Sensor not opened..." << std::endl;
 		stop();
 	}
 	if( !mLastAngleTick ) {

@@ -6,8 +6,7 @@
 class Led
 {
 public:
-	Led(int pinNr);
-	Led(int pinNr, int blinkTimer);
+	Led(int pinNr, int blinkTimer = 0);
 	~Led();
 	void on(void);
 	void off(void);
@@ -17,10 +16,11 @@ public:
 	void setBlinktimer(int blinkTimer);
 
 private:
+	void write( int ioctl, int value );
+
 	File mSensor;
-	int status; //led is on, off or blinking
-	int pinNr;
-	int blinkTimer; 
+	int mPinNr;
+	int mBlinkTimer;
 };
 
 #endif // HARDWARE_LED_H
