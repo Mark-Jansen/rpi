@@ -25,7 +25,7 @@ static int g_Major = 0;
 static struct class* g_Class = NULL;
 static struct device* g_Device = NULL;
 
-static DEFINE_SPINLOCK(g_Lock);
+
 static int debug = 0;
 module_param(debug, int, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
@@ -37,49 +37,44 @@ struct motor_driver_encoder_data encoder_data;
 	
 int motor_driver_set_config(struct motor_driver_setting* arg)
 {
-	unsigned long flags;
+	
 	trace("");
-	spin_lock_irqsave( &g_Lock, flags );
 	IN1_pin.pinNr = arg->direction_in1_pinnr;
-	IN2_pin.pinNr = arg->direction_in2_pinnr;
 	IN1_pin.function = OUTPUT;
-	IN2_pin.function = OUTPUT;
 	IN1_pin.value = arg->direction_pinL;
+	
+	IN2_pin.pinNr = arg->direction_in2_pinnr;
+	IN2_pin.function = OUTPUT;
 	IN2_pin.value = arg->direction_pinR;
+		
 	pwm_setting.channel = arg->pwm_channel;
 	pwm_setting.pin = arg->pwm_pinnr;
 	pwm_setting.enabled =arg->pwm_enable;
 	pwm_setting.frequency = arg->pwm_frequency;
 	pwm_setting.duty_cycle = arg->pwm_duty_cycle;
-	if((gpio_set_config(&IN1_pin) && gpio_set_config(&IN2_pin)) == 0)
-	{
-		if (((gpio_write(&IN1_pin)) && (gpio_write(&IN2_pin)) &&  (pwm_set_settings(&pwm_setting))) == 0)
-		{
-		spin_unlock_irqrestore( &g_Lock, flags );
-		return 0;
-		}
-		else
-		{
-			return -1;
-		}
-	}
-	else
-	{
-		return -1;
-	}	
+	
+	gpio_set_config(&IN1_pin);
+	gpio_set_config(&IN2_pin);
+	
+	gpio_write(&IN1_pin);
+	gpio_write(&IN2_pin);
+	pwm_set_settings(&pwm_setting);
+	
+	
+	
 }
 EXPORT_SYMBOL(motor_driver_set_config);
 
 int setSpeed(struct motor_driver_setting* arg)
 {
-	unsigned long flags;
+
 	int ch = arg->pwm_channel;
 	int dc = arg->pwm_duty_cycle;
 	trace("");
-	spin_lock_irqsave( &g_Lock, flags );
+
 	
 	if ((pwm_set_duty_cycle(ch,dc))== 0){
-	spin_unlock_irqrestore( &g_Lock, flags );
+
 	return 0;
 	}else{
 	return -1;
@@ -90,11 +85,11 @@ EXPORT_SYMBOL(setSpeed);
 int getSpeed(struct motor_driver_encoder_data* arg)
 {
 	//TODO get encoderdat from encoder driver
-	unsigned long flags;
-	spin_lock_irqsave( &g_Lock, flags );
+	//unsigned long flags;
+
 	encoder_data.speed = arg->speed;
 	encoder_data.direction = arg->direction;
-	spin_unlock_irqrestore( &g_Lock, flags );
+
 	return 0;
 }
 EXPORT_SYMBOL(getSpeed);

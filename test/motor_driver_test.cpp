@@ -40,11 +40,13 @@ void showMenu( void )
 {
     cout << ("\n\nMENU");
 	cout << ("\n===========================");
-	cout << ("\n[1] Set speed motor A.");
-	cout << ("\n[2] Set direction motor A");
-	cout << ("\n[3] Set speed motor B.");
-	cout << ("\n[4] Set direction motor B.");
-	cout << ("\n[5] Stop");
+	cout << ("\n[1] Set SPEED motor A.");
+	cout << ("\n[2] Set DIRECTION motor A");
+	cout << ("\n[3] Set SPEED motor B.");
+	cout << ("\n[4] Set DIRECTION motor B.");
+	cout << ("\n[5] Set DIRECTION motor A & B.");
+	cout << ("\n[6] Set SPEED motor A & B.");
+	cout << ("\n[7] STOP");
 	cout <<  ("\n\nKeuze : ");
 }
 
@@ -63,7 +65,6 @@ int write(int fd,struct motor_driver_setting* config)
 int setSpeed(int fd, struct motor_driver_setting* config)
 {
 	printf ("dutycycle_motor_A: %d \n", motor_A.pwm_duty_cycle);
-
 	if( ioctl(fd, MOTOR_SETSPEED,config ) == -1) { 
  		perror( "set speed" ); 
  		close( fd ); 
@@ -79,20 +80,20 @@ void init_motor_driver_setting()
 		motor_A.direction_in2_pinnr = 23;
 		motor_A.direction_pinL = 0;
 		motor_A.direction_pinR = 0;
-		motor_A.pwm_channel = SW_PWM;
+		motor_A.pwm_channel = 1;
 		motor_A.pwm_pinnr = 17;
 		motor_A.pwm_enable = 1;
-		motor_A.pwm_frequency = 20000;
+		motor_A.pwm_frequency = 10000;
 		motor_A.pwm_duty_cycle = 0;
 		
 		motor_B.direction_in1_pinnr = 24;
 		motor_B.direction_in2_pinnr = 25;
 		motor_B.direction_pinL = 0;
 		motor_B.direction_pinR = 0;
-		motor_B.pwm_channel = HW_PWM;
+		motor_B.pwm_channel = 0;
 		motor_B.pwm_pinnr = 18;
 		motor_B.pwm_enable = 1;
-		motor_B.pwm_frequency = 20000;
+		motor_B.pwm_frequency = 10000;
 		motor_B.pwm_duty_cycle = 0;	
 		
 }
@@ -109,10 +110,9 @@ int main()
 {
 	bool close_menu = false;
 	char choice = 0;
-	int dutycycle_motor_A = 0;
-	int dutycycle_motor_B = 0;
-	char direction_A ;
-	char direction_B ;
+	int dutycycle = 0;
+	char direction;
+
 	
 	int fd = open("/dev/motor_driver", O_RDWR);
 	if (fd == -1) {
@@ -134,22 +134,22 @@ int main()
 		{
 			case '1':
 				cout << "Set duty cycle Motor A,[0-100]" << endl;			
-				cin >> dutycycle_motor_A;
+				cin >> dutycycle;
 				cin.ignore();
-				motor_A.pwm_duty_cycle = dutycycle_motor_A;
+				motor_A.pwm_duty_cycle = dutycycle;
 				setSpeed(fd,&motor_A);
 				break;	
 			case '2':
-				cout << "Set direction motor A,[L] or [R]" << endl;
-				cin >> direction_A;
+				cout << "Set direction motor A (SW_PWM),[L] or [R]" << endl;
+				cin >> direction;
 				cin.ignore();
-				if (!( direction_A != 'L' && direction_A != 'l'))
+				if (!( direction != 'L' && direction != 'l'))
 				{
 					motor_A.direction_pinL = 1;
 					motor_A.direction_pinR = 0;
 					write(fd,&motor_A);
 				}
-				else if (!( direction_A != 'R' && direction_A != 'r'))
+				else if (!( direction != 'R' && direction != 'r'))
 				{
 					motor_A.direction_pinL = 0;
 					motor_A.direction_pinR = 1;
@@ -158,22 +158,22 @@ int main()
 				break;
 			case '3':
 				cout << "Set duty cycle Motor B,[0-100]" << endl;
-				cin >> dutycycle_motor_B;
+				cin >> dutycycle;
 				cin.ignore();
-				motor_B.pwm_duty_cycle = dutycycle_motor_B;
+				motor_B.pwm_duty_cycle = dutycycle;
 				setSpeed(fd,&motor_B);
 				break;
 			case '4':
-				cout << "Set direction motor B,[L] or [R]" << endl;
-				cin >> direction_B;
+				cout << "Set direction motor B (HW_PWM),[L] or [R]" << endl;
+				cin >> direction;
 				cin.ignore();
-				if (!( direction_B != 'L' && direction_B != 'l'))
+				if (!( direction != 'L' && direction != 'l'))
 				{
 					motor_B.direction_pinL = 1;
 					motor_B.direction_pinR = 0;
 					write(fd,&motor_B);
 				}
-				else if (!( direction_B != 'R' && direction_B != 'r'))
+				else if (!( direction != 'R' && direction != 'r'))
 				{
 					motor_B.direction_pinL = 0;
 					motor_B.direction_pinR = 1;
@@ -181,11 +181,45 @@ int main()
 				}
 				break;
 			case '5':
+				 // set direction motor A and B
+				cout << "Set direction motor A (SW_PWM) & motor B (HW_PWM),[L] or [R]" << endl;
+				cin >> direction;
+				cin.ignore();
+				if (!( direction != 'L' && direction != 'l'))
+				{
+					motor_A.direction_pinL = 1;
+					motor_A.direction_pinR = 0;
+					motor_B.direction_pinL = 1;
+					motor_B.direction_pinR = 0;
+					write(fd,&motor_A);
+					write(fd,&motor_B);
+				}
+				else if (!( direction != 'R' && direction != 'r'))
+				{
+					motor_A.direction_pinL = 0;
+					motor_A.direction_pinR = 1;
+					motor_B.direction_pinL = 0;
+					motor_B.direction_pinR = 1;
+					write(fd,&motor_A);
+					write(fd,&motor_B);
+				}
+				break;
+			case '6':
+				// set speed motor A and B
+				cout << "Set duty cycle Motor A & B,[0-100]" << endl;			
+				cin >> dutycycle;
+				cin.ignore();
+				motor_A.pwm_duty_cycle = dutycycle;
+				motor_B.pwm_duty_cycle = dutycycle;
+				setSpeed(fd,&motor_A);
+				setSpeed(fd,&motor_B);
+				break;
+			
+			
+			case '7':
 				close_menu = true;
 				close(fd);
 				break;	
-		}
-		
-	}
-	
+		}		
+	}	
 }

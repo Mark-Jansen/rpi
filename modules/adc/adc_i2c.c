@@ -8,6 +8,7 @@
 
 #include "adc_internal.h"
 #include "adc.h"
+#include "../common/common.h"
 
 // guard against a misconfigured kernel
 #if !defined(CONFIG_I2C) && !defined(CONFIG_I2C_MODULE)
@@ -74,7 +75,7 @@ int adc_read_device(struct adc_config* cfg, struct adc_data* data)
 EXPORT_SYMBOL(adc_read_device);
 
 // i2c setup code
-static int __devinit adc_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
+static int adc_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	trace("addr: 0x%x", client->addr);
 	if( !i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA) ) {
@@ -84,7 +85,7 @@ static int __devinit adc_i2c_probe(struct i2c_client *client, const struct i2c_d
 	return 0;
 }
 
-static int __devexit adc_i2c_remove( struct i2c_client *client )
+static int adc_i2c_remove( struct i2c_client *client )
 {
 	trace("");
 	return 0;
@@ -111,7 +112,7 @@ static struct i2c_driver adc_i2c_driver = {
 	},
 };
 
-int __init adc_i2c_init()
+int adc_i2c_init()
 {
 	int busnum = 1;
 	struct i2c_adapter *adap;
@@ -133,7 +134,7 @@ int __init adc_i2c_init()
 	return i2c_add_driver( &adc_i2c_driver );
 }
 
-void __devexit adc_i2c_exit()
+void adc_i2c_exit()
 {
 	struct i2c_client* client;
 	trace("");

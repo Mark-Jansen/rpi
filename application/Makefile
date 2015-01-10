@@ -9,13 +9,22 @@ endif
 
 CROSS_COMPILE:=$(L_BUILDROOT)/output/host/usr/bin/arm-linux-
 
-all: balancer
+all: generic balancer
 
-.PHONY: all, clean
+.PHONY: generic all clean
 
-balancer: main.cpp
-	$(CROSS_COMPILE)g++ main.cpp -o ../build/balancer -I../modules
+generic: generic/*.cpp
+	@echo "Building generic"; \
+	cd generic; \
+	$(CROSS_COMPILE)g++ -c *.cpp -I../modules -std=c++11; \
+	cd ..; \
+	ar -cq libgeneric.a generic/*.o;
+
+balancer: main.cpp Gyro.cpp generic
+	@echo "Building balancer"; \
+	$(CROSS_COMPILE)g++ main.cpp Gyro.cpp libgeneric.a -o ../build/balancer -I../modules -std=c++11 -lpthread
 
 clean:
-	rm -f *.o ../build/balancer
+	@echo "Cleaning generic / balancer"; \
+	rm -f *.o generic/*.o libgeneric.a ../build/balancer
 

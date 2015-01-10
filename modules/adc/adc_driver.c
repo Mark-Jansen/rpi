@@ -5,16 +5,11 @@
 #include <linux/platform_device.h>
 #include <linux/ioctl.h>
 #include <linux/uaccess.h>		// copy_[from/to]_user
-//#include <linux/slab.h>			// kzalloc
 
 
 #include "adc_internal.h"
 #include "adc.h"
-
-
-static int g_Major = 0;
-static struct class* g_Class = NULL;
-static struct device* g_Device = NULL;
+#include "../common/common.h"
 
 // spinlock used to protect the global config
 static DEFINE_SPINLOCK(g_Lock);
@@ -23,9 +18,6 @@ static struct adc_config g_Config = {
 	.gain = ADC_GAIN_1
 };
 
-int debug = 0;
-module_param(debug, int, S_IRUGO | S_IWUSR);
-MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
 
 // read the adc with the global config, available as exported symbol and as ioctl
 int adc_get_data(struct adc_data* data)
@@ -168,75 +160,24 @@ static DEVICE_ATTR( config, S_IWUSR | S_IRUGO, show_config, NULL );
 static DEVICE_ATTR( chan0, S_IWUSR | S_IRUGO, show_chan0, NULL );
 static DEVICE_ATTR( chan1, S_IWUSR | S_IRUGO, show_chan1, NULL );
 
+static const struct device_attribute* adc_devattrs[] = {
+	&dev_attr_config,
+	&dev_attr_chan0,
+	&dev_attr_chan1,
+	NULL
+};
 
-static int __init adc_init(void)
-{
-	int ret = -1;
-	trace("");
-	
-	g_Major = register_chrdev( ADC_MAJOR, DRV_NAME, &adc_fops );
-	if( g_Major < 0 ) {
-		error( "could not register device: %d", g_Major );
-		goto out;
-	} if( g_Major == 0 ) {
-		g_Major = ADC_MAJOR;
-	}
+struct driver_info info = {
+	.name = DRV_NAME,
+	.major = 0,
+	.fops = &adc_fops,
+	.dattrs = adc_devattrs,
+	.init = adc_i2c_init,
+	.exit = adc_i2c_exit
+};
 
-	g_Class = class_create( THIS_MODULE, DRV_NAME );
-	if( IS_ERR(g_Class) ) {
-		error( "could not register class %s", DRV_NAME );
-		ret = PTR_ERR( g_Class );
-		goto out_chrdev;
-	}
-	
-	g_Device = device_create( g_Class, NULL, MKDEV(g_Major, 0), NULL, DRV_NAME );
-	if( IS_ERR(g_Class) ) {
-		error( "could not create %s", DRV_NAME );
-		ret = PTR_ERR( g_Device );
-		goto out_device;
-	}
-	
-	ret = device_create_file( g_Device, &dev_attr_config );
-	ret |= device_create_file( g_Device, &dev_attr_chan0 );
-	ret |= device_create_file( g_Device, &dev_attr_chan1 );
-
-	if( !ret ) {
-		ret = adc_i2c_init();
-	}
-
-	info( DRV_REV " loaded, major: %d", g_Major );
-
-	goto out;
-
-out_device:
-	class_unregister( g_Class );
-	class_destroy( g_Class );
-out_chrdev:
-	unregister_chrdev(g_Major, DRV_NAME);
-out:
-	return ret;
-}
-
-static void __exit adc_exit(void)
-{
-	trace("");
-
-	adc_i2c_exit();
-	device_remove_file( g_Device, &dev_attr_config );
-	device_remove_file( g_Device, &dev_attr_chan0 );
-	device_remove_file( g_Device, &dev_attr_chan1 );
-	device_destroy( g_Class, MKDEV(g_Major, 0) );
-	class_unregister( g_Class );
-	class_destroy( g_Class );
-	unregister_chrdev( g_Major, DRV_NAME );
-
-	info("unloaded.");
-}
-
-module_init(adc_init);
-module_exit(adc_exit);
 
 MODULE_AUTHOR("Mark Jansen <mark@jansen.co.nl>");
 MODULE_DESCRIPTION("ADC driver");
 MODULE_LICENSE("GPL");
-MODULE_VERSION(DRV_REV);
+MODULE_VERSION("r2");

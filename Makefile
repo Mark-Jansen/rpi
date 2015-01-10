@@ -7,12 +7,12 @@ TARGETS = modules \
 		clean
 
 all:
-	for T in $(TARGETS); do  \
+	@for T in $(TARGETS); do  \
 		${MAKE} -s -C $$T; \
 	done;
 
 clean:
-	for T in $(TARGETS); do  \
+	@for T in $(TARGETS); do  \
 		${MAKE} -s -C $$T clean; \
 	done
 

@@ -1,4 +1,3 @@
-
 # try to use the environment variable of BUILDROOT if it's defined,
 # otherwise use a hardcoded path
 ifeq "$(BUILDROOT)" ""

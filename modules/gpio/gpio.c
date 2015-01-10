@@ -9,6 +9,7 @@
 // ==== History   : Version 1.00                                                ====
 // ====             								                            ====
 // ====                     							                        ====
+// ====                                                                         ====
 // =================================================================================
 
 // =================================================================================
@@ -19,8 +20,10 @@
 #include <linux/platform_device.h>
 #include <linux/ioctl.h>
 #include <linux/uaccess.h>		//copy_[from/to]_user
+#include <linux/delay.h> 
 #include <asm/io.h>
 #include <mach/platform.h>
+#include "gpio.h"
 
 
 // =================================================================================
@@ -29,8 +32,6 @@
 #define DRV_NAME		"gpio"
 #define DRV_REV			"r1"
 #define DRV_MAJOR		0
-
-#include "gpio.h"
 
 #define trace(format, arg...) do { if( debug & 1 ) pr_info( DRV_NAME ": %s: " format "\n", __FUNCTION__, ## arg ); } while (0)
 #define info(format, arg...) pr_info( DRV_NAME ": " format "\n", ## arg )
@@ -67,23 +68,129 @@ int gpio_set_config(struct gpio_status* arg)
 	int mask2;
 	int mask3;
 	int mask4;
+	int i;
+	int event;
 	
 	unsigned long flags;
 	trace("");
 	spin_lock_irqsave( &g_Lock, flags );
 	
-	// check for the right register.
-	registerIndex = arg->pinNr / 10;
-	// check old register settings
-	oldRegister = gpioRegister->GPFSEL[registerIndex];			// oude register
+	//=====	Set gpio function	======//
+	registerIndex = arg->pinNr / 10;						// check for the right register.
+	oldRegister = gpioRegister->GPFSEL[registerIndex];		// check old register
 	// change register settings
-	bit = (arg->pinNr % 10) * 3	;							// juist pin ivm 3 bits per pin voor functie
-	mask1 = 0b111 << bit;									// mask voor 3 bits van het juiste pinNr
-	mask2 = oldRegister & ~mask1;							// forceer de 3 bits van gekozen pinNr op 0
-	mask3 = (arg->function  << bit) & mask1;					// mask voor het setten van de juiste waarde op pin nr
-	mask4 = mask2 | mask3;									// zet de overige bits weer in de oorspronkelijke stond terug
-	gpioRegister->GPFSEL[registerIndex] = mask4;			// geef gekozen pinNr juist waarde	
-		
+	bit = (arg->pinNr % 10) * 3	;							// there are 10 gpiopins for 1 register. we need 3 bits to set the function of 1 gpiopin
+	mask1 = 0b111 << bit;									// a mask to find the 3 bits for this gpiopin
+	mask2 = oldRegister & ~mask1;							// a mask to set the 3 bits for this gpiopin to zero and save the other bits
+	mask3 = (arg->function << bit) & mask1;					// a mask to set the 3 bits for this gpiopin to the correct value
+	mask4 = mask2 | mask3;									// a mask to set the other bits back 
+	gpioRegister->GPFSEL[registerIndex] = mask4;			// set the new value into the register 		
+	
+	//=====	Set pull up/down	======//
+	registerIndex = arg->pinNr/32;
+	if(arg->pull_up_down != 0)
+	{
+	
+		gpioRegister->GPPUD = arg->pull_up_down;					// set the required control signal	
+		for(i=0; i<150; i++)										// wait 150 cycles
+		{
+			udelay(10); 
+		}							
+		gpioRegister->GPPUDCLK[registerIndex] = 1 << arg->pinNr;	// clock the control signal into the GPIO pads you wish to modify
+		for(i=0; i<150; i++) 										// wait 150 cycles
+		{
+			udelay(10);
+		}							
+		gpioRegister->GPPUD = PULL_OFF;								// remove the required control signal	
+		gpioRegister->GPPUDCLK[registerIndex] = 0 << arg->pinNr;	// Remove clock
+	}
+
+	//=====	Set event detect	======//
+	// event = arg->event_detect;
+
+	
+	// if (event == NO_DETECT)
+	// {
+		// printk(KERN_INFO "NO_DETECT \n");
+		// gpioRegister->GPFEN[registerIndex] &= ~(1 << arg->pinNr);	// Falling edge detect disabled				
+		// gpioRegister->GPREN[registerIndex] &= ~(1 << arg->pinNr);	// rising edge detect enabled	
+		// gpioRegister->GPHEN[registerIndex] &= ~(1 << arg->pinNr);	// high detect disabled
+		// gpioRegister->GPLEN[registerIndex] &= ~(1 << arg->pinNr);	// low detect disabled
+		// gpioRegister->GPAFEN[registerIndex] &= ~(1 << arg->pinNr);	// async falling edge detect disabled
+		// gpioRegister->GPAREN[registerIndex] &= ~(1 << arg->pinNr);	// async rising edge detect disabled	
+		// gpioRegister->GPEDS[registerIndex] |= 1 << arg->pinNr;		// clear event detect status
+	// }
+	// else if(event == RISING_EDGE_DETECT)
+	// {
+		// printk(KERN_INFO "RISING_EDGE_DETECT \n");
+		// gpioRegister->GPFEN[registerIndex] &= ~(1 << arg->pinNr);	// Falling edge detect disabled				
+		// gpioRegister->GPREN[registerIndex] |= 1 << arg->pinNr;		// rising edge detect enabled	
+		// gpioRegister->GPHEN[registerIndex] &= ~(1 << arg->pinNr);	// high detect disabled
+		// gpioRegister->GPLEN[registerIndex] &= ~(1 << arg->pinNr);	// low detect disabled
+		// gpioRegister->GPAFEN[registerIndex] &= ~(1 << arg->pinNr);	// async falling edge detect disabled
+		// gpioRegister->GPAREN[registerIndex] &= ~(1 << arg->pinNr);	// async rising edge detect disabled	
+		// gpioRegister->GPEDS[registerIndex] |= 1 << arg->pinNr;		// clear event detect status	
+	// }
+	// else if(event == FALLING_EDGE_DETECT)
+	// {
+		// printk(KERN_INFO "FALLING_EDGE_DETECT \n");
+		// gpioRegister->GPFEN[registerIndex] |= 1 << arg->pinNr;		// Falling edge detect enabled				
+		// gpioRegister->GPREN[registerIndex] &= ~(1 << arg->pinNr);	// rising edge detect disabled	
+		// gpioRegister->GPHEN[registerIndex] &= ~(1 << arg->pinNr);	// high detect disabled
+		// gpioRegister->GPLEN[registerIndex] &= ~(1 << arg->pinNr);	// low detect disabled
+		// gpioRegister->GPAFEN[registerIndex] &= ~(1 << arg->pinNr);	// async falling edge detect disabled
+		// gpioRegister->GPAREN[registerIndex] &= ~(1 << arg->pinNr);	// async rising edge detect disabled	
+		// gpioRegister->GPEDS[registerIndex] = 1 << arg->pinNr;		// clear event detect status
+	// }
+	// else if(event == LOW_DETECT)
+	// {
+		// printk(KERN_INFO "LOW_DETECT \n");
+		// gpioRegister->GPFEN[registerIndex] &= ~(1 << arg->pinNr);	// Falling edge detect disabled				
+		// gpioRegister->GPREN[registerIndex] &= ~(1 << arg->pinNr);	// rising edge detect enabled	
+		// gpioRegister->GPHEN[registerIndex] &= ~(1 << arg->pinNr);	// high detect disabled
+		// gpioRegister->GPLEN[registerIndex] |= 1 << arg->pinNr;		// low detect disabled
+		// gpioRegister->GPAFEN[registerIndex] &= ~(1 << arg->pinNr);	// async falling edge detect disabled
+		// gpioRegister->GPAREN[registerIndex] &= ~(1 << arg->pinNr);	// async rising edge detect disabled	
+		// gpioRegister->GPEDS[registerIndex] = 1 << arg->pinNr;		// clear event detect status	
+	// }
+	// else if(event == HIGH_DETECT)
+	// {
+		// printk(KERN_INFO "HIGH_DETECT \n");
+		// gpioRegister->GPFEN[registerIndex] &= ~(1 << arg->pinNr);	// Falling edge detect disabled				
+		// gpioRegister->GPREN[registerIndex] &= ~(1 << arg->pinNr);	// rising edge detect enabled	
+		// gpioRegister->GPHEN[registerIndex] |= 1 << arg->pinNr;		// high detect disabled
+		// gpioRegister->GPLEN[registerIndex] &= ~(1 << arg->pinNr);	// low detect disabled
+		// gpioRegister->GPAFEN[registerIndex] &= ~(1 << arg->pinNr);	// async falling edge detect disabled
+		// gpioRegister->GPAREN[registerIndex] &= ~(1 << arg->pinNr);	// async rising edge detect disabled	
+		// gpioRegister->GPEDS[registerIndex] |= 1 << arg->pinNr;		// clear event detect status	
+	// }
+	// else if(event == ASYNC_RISING_EDGE_DETECT)
+	// {
+		// printk(KERN_INFO "NO_DETECT \n");
+		// gpioRegister->GPFEN[registerIndex] &= ~(1 << arg->pinNr);	// Falling edge detect disabled				
+		// gpioRegister->GPREN[registerIndex] &= ~(1 << arg->pinNr);	// rising edge detect enabled	
+		// gpioRegister->GPHEN[registerIndex] &= ~(1 << arg->pinNr);	// high detect disabled
+		// gpioRegister->GPLEN[registerIndex] &= ~(1 << arg->pinNr);	// low detect disabled
+		// gpioRegister->GPAFEN[registerIndex] &= ~(1 << arg->pinNr);	// async falling edge detect disabled
+		// gpioRegister->GPAREN[registerIndex] |= 1 << arg->pinNr;		// async rising edge detect disabled	
+		// gpioRegister->GPEDS[registerIndex] |= 1 << arg->pinNr;		// clear event detect status	
+	// }
+	// else if(event == ASYNC_FALLING_EDGE_DETECT)
+	// {
+		// printk(KERN_INFO "NO_DETECT \n");
+		// gpioRegister->GPFEN[registerIndex] &= ~(1 << arg->pinNr);	// Falling edge detect disabled				
+		// gpioRegister->GPREN[registerIndex] &= ~(1 << arg->pinNr);	// rising edge detect enabled	
+		// gpioRegister->GPHEN[registerIndex] &= ~(1 << arg->pinNr);	// high detect disabled
+		// gpioRegister->GPLEN[registerIndex] &= ~(1 << arg->pinNr);	// low detect disabled
+		// gpioRegister->GPAFEN[registerIndex] |= 1 << arg->pinNr;		// async falling edge detect disabled
+		// gpioRegister->GPAREN[registerIndex] &= ~(1 << arg->pinNr);	// async rising edge detect disabled	
+		// gpioRegister->GPEDS[registerIndex] |= 1 << arg->pinNr;		// clear event detect status
+	// }
+	// else
+	// {
+		// printk(KERN_INFO "don't find valid number of arg->event = %i \n", event);
+	// }
+	
 	spin_unlock_irqrestore( &g_Lock, flags );
 	return 0;
 }
@@ -96,22 +203,58 @@ EXPORT_SYMBOL(gpio_set_config);
 // =================================================================================
 int gpio_read(struct gpio_status* arg)
 {
-	int gpioPin = arg->pinNr;
-	int gplevregister;
-	int mask;
-	int gplevValue;
-		
+	int gpioPin = arg->pinNr%32;
+	int readRegister;
+	int readRegister_2;
+	int registerIndex;
+	int pinMask;
+	
 	unsigned long flags;
 	trace("");
 	spin_lock_irqsave( &g_Lock, flags );
 	
 	// check right register
-	if ((gpioPin >= 0) && (gpioPin < 54))	// GPIO Pin is available
+	if ((gpioPin >= 0) && (gpioPin <= 54))	// GPIO Pin is available
 	{
-		gplevregister = gpioPin/32;							// bepaal het goede register
-		mask = 1 << gpioPin;								// mask voor de juiste gpio pin
-		gplevValue = gpioRegister->GPLEV[gplevregister];	// lees het goed regiser uit
-		arg->value = (gplevValue & mask) >> gpioPin;		// lees de goede gpio pin uit en shift hem zodat er alleen 1 of 0 uitkomt
+		registerIndex = gpioPin/32;			// find register for this gpioPin
+		pinMask = 1 << gpioPin;				// make pinMask for the right pinNr
+		if(arg->event_detect == NO_DETECT)
+		{		
+			// Read actual value with GPLEV
+			readRegister = gpioRegister->GPLEV[registerIndex];				// read the register
+			printk(KERN_INFO "readRegister = %i. \n", readRegister);		// For debug
+			readRegister_2 = readRegister & pinMask;	
+			printk(KERN_INFO "readRegister_2 = %i. \n", readRegister_2);	// For debug
+			arg->value = readRegister_2 >> gpioPin;							// Read the gpioPin with pinMask, use shift for the value "0" or "1" 
+			printk(KERN_INFO "arg->value = %i. \n", arg->value);			// For debug
+		}
+		else
+		{	
+			// Read event detected value with GPEDS
+			printk(KERN_INFO "GPEDS register value before clear = %i. \n", gpioRegister->GPEDS[registerIndex]);		// For debug
+			printk(KERN_INFO "GPEDS register value before clear = %i. \n", gpioRegister->GPEDS[registerIndex]);		// For debug
+			printk(KERN_INFO "GPFEN register value before clear = %i. \n", gpioRegister->GPFEN[registerIndex]);		// For debug
+			printk(KERN_INFO "GPREN register value before clear = %i. \n", gpioRegister->GPREN[registerIndex]);		// For debug
+			printk(KERN_INFO "GPHEN register value before clear = %i. \n", gpioRegister->GPHEN[registerIndex]);		// For debug
+			printk(KERN_INFO "GPLEN register value before clear = %i. \n", gpioRegister->GPLEN[registerIndex]);		// For debug
+			printk(KERN_INFO "GPAFEN register value before clear = %i. \n", gpioRegister->GPAFEN[registerIndex]);	// For debug
+			printk(KERN_INFO "GPAREN register value before clear = %i. \n", gpioRegister->GPAREN[registerIndex]);	// For debug
+			printk(KERN_INFO "GPEDS register value before clear = %i. \n", gpioRegister->GPEDS[registerIndex]);		// For debug
+			printk(KERN_INFO "GPEDS register value before clear = %i. \n", gpioRegister->GPEDS[registerIndex]);		// For debug
+			
+			readRegister = gpioRegister->GPEDS[registerIndex];				// read the register
+			printk(KERN_INFO "readRegister = %i. \n", readRegister);		// For debug
+			readRegister_2 = readRegister & pinMask;						// Mask for select only pinNr
+			printk(KERN_INFO "readRegister_2 = %i. \n", readRegister_2);	// For debug
+			arg->value = readRegister_2 >> gpioPin;							// Read the gpioPin with pinMask, use shift for the value "0" or "1" 
+			printk(KERN_INFO "arg->value = %i. \n", arg->value);			// For debug
+			if (arg->value)			
+			{
+				gpioRegister->GPEDS[registerIndex] = readRegister | pinMask;	// clear GPEDS by writing a "1"		
+				printk(KERN_INFO "GPEDS register is cleared bij writing a '1': %i. \n", gpioRegister->GPEDS[registerIndex]);	// For debug
+			}
+			printk(KERN_INFO "GPEDS register = %i. \n", gpioRegister->GPEDS[registerIndex]);									// For debug
+		}
 	}
 	else
 	{
@@ -133,39 +276,43 @@ int gpio_write(struct gpio_status* arg)
 	int gpioPin = arg->pinNr;
 	int outputvalue = arg->value;
 	int registerNr = 0;
-	int mask;
+	int pinMask;
 
 	unsigned long flags;
 	trace("");
 	spin_lock_irqsave( &g_Lock, flags );
 		
 	// check right register
-	if ((gpioPin > 0) && (gpioPin < 54))	// GPIO Pin is available
+	if ((gpioPin >= 0) && (gpioPin <= 54))	// GPIO Pin is available
 	{
-		registerNr = gpioPin/32;			// bepaal het goede register
+		registerNr = gpioPin/32;			// find register for this gpioPin
 	}
 	else
 	{
 		printk(KERN_INFO "PinNr not available. \n");
 	}
 
-	// set outputvalue at right register
-	mask = 1 << gpioPin;
-	if (outputvalue)	// for set to 1 use GPSET
+	// set outputvalue with the right register
+	pinMask = 1 << gpioPin;
+	if (outputvalue)	// for set to 1 we must use GPSET
 	{	
-		gpioRegister->GPSET[registerNr] = mask;	// zet de juiste gpio pin op 1 
+		gpioRegister->GPSET[registerNr] = pinMask;	// Set gpiopin to "1"
 	}
-	else				// for set to 0 use GPCLR
+	else				// for set to 0 we must use GPCLR
 	{
-		gpioRegister->GPCLR[registerNr] = mask;	// zet de juiste gpio pin op 0
+		gpioRegister->GPCLR[registerNr] = pinMask;	// Set gpiopin to "0" 
 	}
-	
 	spin_unlock_irqrestore( &g_Lock, flags );
 	return 0;
 }
 EXPORT_SYMBOL(gpio_write);
 
-// file operations
+
+// =================================================================================
+// static long led_ioctl(struct file *file, unsigned int command, unsigned long arg)
+// Pre : 
+// Post: uses the command function
+// =================================================================================
 static long gpio_ioctl(struct file *file, unsigned int command, unsigned long arg)
 {
 	long ret = -EFAULT;

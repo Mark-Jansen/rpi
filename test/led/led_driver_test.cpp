@@ -31,6 +31,7 @@
 // =================================================================================
 struct led_status off_led;
 struct led_status on_led;
+struct led_status blink_led;
 using namespace std;
 
 // =================================================================================
@@ -43,6 +44,7 @@ void showMenu( void )
 	printf("\n===========================");
 	printf("\n[1] Set led on.");
 	printf("\n[2] Set led off");
+	printf("\n[3] Set led blink");
 	printf("\n[5] Stop");
 	printf("\n\nKeuze : ");
 }
@@ -62,6 +64,7 @@ int main()
 	char choice = 0;
 	int pinnrON = 0;
 	int pinnrOFF = 0;
+	int pinnrBlink = 0;
 
 	// default value
 	on_led.pinNr = 23;
@@ -69,6 +72,9 @@ int main()
 	// default value
 	off_led.pinNr = 23;
 	off_led.value = OFF;
+	
+	blink_led.pinNr = 23;
+	blink_led.value = OFF;
 	
 	int fd = open("/dev/led", O_RDWR);
 	if (fd == -1) {
@@ -85,7 +91,7 @@ int main()
 		switch(choice)
 		{
 			case '1':
-				cout << "Pinnumber to set on" << endl;
+				cout << "Pinnumber to set on: " << endl;
 				cin >> pinnrON;
 				cin.ignore();
 				on_led.pinNr = pinnrON;
@@ -105,7 +111,7 @@ int main()
 				cout << "pinnumber should be on = " << on_led.pinNr << endl;
 				break;	
 			case '2':
-				cout << "pinnumber to set off" << endl;
+				cout << "pinnumber to set off: " << endl;
 				cin >> pinnrOFF;
 				cin.ignore();
 				off_led.pinNr = pinnrOFF;
@@ -121,7 +127,26 @@ int main()
 					close( fd );
 					return -1;
 				}
-				break;	
+				break;
+			case '3':
+				cout << "pinnumber to blink: " << endl;
+				cin >> pinnrBlink;
+				cin.ignore();
+				blink_led.pinNr = pinnrBlink;
+				blink_led.blinkTimer = 1000;
+				if( ioctl(fd, LED_SET_CONFIG, &blink_led) == -1) 
+				{
+					perror( "ioctl LED_SET_CONFIG:  failed" );
+					close( fd );
+					return -1;
+				}
+				if( ioctl(fd, LED_BLINK, &blink_led) == -1) 
+				{
+					perror( "ioctl LED_BLINK:  failed" );
+					close( fd );
+					return -1;
+				}
+				break;					
 			case '5':
 				close_menu = true;
 				break;

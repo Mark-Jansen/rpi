@@ -1,5 +1,5 @@
 
-MODULE_NAME = ultrasoon
+MODULE_NAME = gyro
 
 # try to use the environment variable of BUILDROOT if it's defined,
 # otherwise use a hardcoded path
@@ -20,7 +20,7 @@ CC=$(CROSS_CC)
 PWD:=$(shell pwd)
 EXTRA_CFLAGS += -DEXPORT_SYMTAB
 obj-m += $(MODULE_NAME).o
-
+$(MODULE_NAME)-objs := gyro_driver.o gyro_i2c.o ../common/common.o
 
 all:
 	$(MAKE) CROSS_COMPILE=$(CROSS_COMPILE) ARCH=$(ARCH) -C $(KDIR) SUBDIRS=$(PWD) modules
