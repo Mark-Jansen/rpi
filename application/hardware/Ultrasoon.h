@@ -9,6 +9,7 @@ public:
 	Ultrasoon(int triggerPin, int echoPin, int type); 
 	virtual ~Ultrasoon();
 	int getDistance(void);
+	bool isInitialized() const;
 
 private:
 	File mSensor;

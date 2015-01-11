@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "BalancerDefines.h"
+#include <generic/Logger.h>
 
 Ultrasoon_controller::Ultrasoon_controller()
 {
@@ -23,12 +24,20 @@ int Ultrasoon_controller::delayMS() const
 
 void Ultrasoon_controller::onBeforeRun()
 {
-	std::cerr << "Initialize ultrasoon" << std::endl;
+	//std::cerr << "Initialize ultrasoon" << std::endl;
+	if( !mFront->isInitialized() ) {
+		ERR("Could not initialize front Ultrasoon");
+		stop();
+	}
+	if( !mBack->isInitialized() ) {
+		ERR("Could not initialize back Ultrasoon");
+		stop();
+	}
 }
 
 void Ultrasoon_controller::onRun()
 {
-	std::cerr << "read ultrasoon" << std::endl;
-	std::cerr << "process data" << std::endl;
-	std::cerr << "store data" << std::endl;
+	//std::cerr << "read ultrasoon" << std::endl;
+	//std::cerr << "process data" << std::endl;
+	//std::cerr << "store data" << std::endl;
 }

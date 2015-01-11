@@ -17,8 +17,13 @@ Ultrasoon::~Ultrasoon()
 {
 }
 
+bool Ultrasoon::isInitialized() const
+{
+	return mSensor.isOpen();
+}
+
 int Ultrasoon::getDistance(void)
 {
-	std::cerr << "TODO: " << __PRETTY_FUNCTION__ << std::endl;
+	//std::cerr << "TODO: " << __PRETTY_FUNCTION__ << std::endl;
 }
 
