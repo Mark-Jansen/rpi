@@ -2,10 +2,11 @@
 
 #include <iostream>
 
+#include <pwm/pwm.h>
 #include "BalancerDefines.h"
 
 Motor::Motor( const Config& cfg )
-	: mSensor( MOTOR_DEVICE, O_RDWR )
+	: mSensor( PWM_DEVICE, O_RDWR )
 	, mConfig( cfg )
 	, mSpeed( 0 )
 	, mEnabled( 0 )

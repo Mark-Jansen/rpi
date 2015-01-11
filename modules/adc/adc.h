@@ -21,6 +21,8 @@ struct adc_config {
 #define ADC_GAIN_4						0x2
 #define ADC_GAIN_8						0x3
 
+#define ADC_DEVICE				"/dev/adc"
+
 #define THERMIOC_MAGIC_ADC		'A'
 #define ADC_GET_DATA		_IOWR(THERMIOC_MAGIC_ADC, 0, struct adc_data)
 

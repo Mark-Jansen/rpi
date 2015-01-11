@@ -84,6 +84,8 @@ struct GpioRegisters
 #define 	DISABLE_IRQ_BASIC		0x224
 
 
+#define GPIO_DEVICE				"/dev/gpio"
+
 #define THERMIOC_MAGIC_GPIO			'G'
 
 #define GPIO_WRITE					_IOW(THERMIOC_MAGIC_GPIO, 0, struct gpio_status)

@@ -7,8 +7,8 @@
 
 Ultrasoon_controller::Ultrasoon_controller()
 {
-	mFront = new Ultrasoon( ULTRASOON_F_TRIGGER, ULTRASOON_F_ECHO, ULTRASOON_F_TYPE );
-	mBack = new Ultrasoon( ULTRASOON_B_TRIGGER, ULTRASOON_B_ECHO, ULTRASOON_B_TYPE );
+	mFront = new Ultrasoon( ULTRASOON_F_TRIGGER, ULTRASOON_F_ECHO );
+	mBack = new Ultrasoon( ULTRASOON_B_TRIGGER, ULTRASOON_B_ECHO );
 }
 
 Ultrasoon_controller::~Ultrasoon_controller() 

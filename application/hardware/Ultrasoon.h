@@ -6,7 +6,7 @@
 class Ultrasoon
 {
 public:
-	Ultrasoon(int triggerPin, int echoPin, int type); 
+	Ultrasoon(int triggerPin, int echoPin); 
 	virtual ~Ultrasoon();
 	int getDistance(void);
 	bool isInitialized() const;
@@ -15,7 +15,6 @@ private:
 	File mSensor;
 	int mTriggerPin;
 	int mEchoPin;
-	int mType; //0= Front sensor , 1= Back sensor
 };
 
 #endif // HARDWARE_ULTRASOON_H
