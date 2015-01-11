@@ -2,19 +2,21 @@
 
 Pid::Pid(double kp, double ki, double kd)
 {
-  Kp = kp; //8
-  Ki = ki; //2
-  Kd = kd; //9
+	Kp = kp; //8
+	Ki = ki; //2
+	Kd = kd; //9
+	error = 0;
 }
 
 Pid::~Pid() 
 {
+	//TODO
 }
 
-int Pid::calculate(double *input, double *setpoint) //return percentage 0..100% to set motor pwm
+int Pid::calculate(double *input, double *setpoint) //return percentage 0..100% to set motor pwm, input and setpoint are angles
 {
-	double lastError;
-    double iTerm;
+	double lastError = getError();
+	double iTerm;
 	/* Update PID values */
 	double error = (*setpoint - *input)/100;
 	double pTerm = Kp * error;
@@ -22,59 +24,64 @@ int Pid::calculate(double *input, double *setpoint) //return percentage 0..100% 
 	double dTerm = Kd * (error - lastError);
 	lastError = error;
 	double PIDValue = pTerm + iTerm + dTerm;
-	
+
 	//PIDLeft = PIDValue;
 	//PIDRight = PIDValue;
-	
+
 	//PIDLeft *= 0.95; // compensate for difference in the motors
-	
+
 	/* Set PWM Values */
 	/*
 	if (PIDLeft >= 0)
-		move(left, forward, PIDLeft);
+	move(left, forward, PIDLeft);
 	else
-		move(left, backward, PIDLeft * -1);
+	move(left, backward, PIDLeft * -1);
 	if (PIDRight >= 0)
-		move(right, forward, PIDRight);
+	move(right, forward, PIDRight);
 	else
-		move(right, backward, PIDRight * -1);
+	move(right, backward, PIDRight * -1);
 	*/
-	if (PIDValue >= 0) return PIDValue;
-	else return PIDValue * -1;	
+	if (PIDValue >= 0) return PIDValue; //moving forward
+	else return PIDValue * -1;	//moving backwards
 }
 
 double Pid::getP()
 {
-  return Kp;
+	return Kp;
 }
 
 double Pid::getI()
 {
-  return Ki;
+	return Ki;
 }
 
 double Pid::getD()
 {
-  return Kd;
+	return Kd;
+}
+
+double Pid::getError()
+{
+	return error;
 }
 
 void Pid::setP(double p)
 {
-  Kp = p;
+	Kp = p;
 }    
-	
+
 void Pid::setI(double i)
 {
-  Ki = i;
+	Ki = i;
 }    
-	
+
 void Pid::setD(double d)
 {
-  Kd = d;
+	Kd = d;
 }    
-		
+
 void Pid::resetError()
 {
-  error = 0;
+	error = 0;
 }
 
