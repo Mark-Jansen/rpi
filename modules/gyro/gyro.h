@@ -7,6 +7,8 @@ struct gyro_data {
 	int16_t gyro_x, gyro_y, gyro_z;
 };
 
+#define GYRO_DEVICE				"/dev/gyro"
+
 #define THERMIOC_MAGIC_GYRO		'G'
 #define GYRO_GET_DATA			_IOWR(THERMIOC_MAGIC_GYRO, 0, struct gyro_data)
 

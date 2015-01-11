@@ -2,6 +2,9 @@
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/ioctl.h>
+#include <linux/delay.h> 
+#include <linux/hrtimer.h>
+#include <linux/sched.h>
 #include <linux/uaccess.h>		//copy_[from/to]_user
 #include <asm/io.h>
 #include <mach/platform.h>
@@ -9,6 +12,7 @@
 #include "motor_driver.h"
 #include "../gpio/gpio.h"
 #include "../pwm/pwm.h"
+#include "../encoder/emcoder.h"
 
 #define DRV_NAME			"motor_driver"
 #define DRV_REV				"r1"
@@ -33,6 +37,8 @@ MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
 struct gpio_status IN1_pin;
 struct gpio_status IN2_pin;
 struct pwm_settings pwm_setting;
+struct encoder_data enc_data;
+
 struct motor_driver_encoder_data encoder_data;
 	
 int motor_driver_set_config(struct motor_driver_setting* arg)
@@ -60,6 +66,7 @@ int motor_driver_set_config(struct motor_driver_setting* arg)
 	gpio_write(&IN2_pin);
 	pwm_set_settings(&pwm_setting);
 	
+	return 0;
 	
 	
 }
@@ -84,12 +91,14 @@ EXPORT_SYMBOL(setSpeed);
 
 int getSpeed(struct motor_driver_encoder_data* arg)
 {
-	//TODO get encoderdat from encoder driver
-	//unsigned long flags;
-
-	encoder_data.speed = arg->speed;
-	encoder_data.direction = arg->direction;
-
+	get_pulse_count(&enc_data);
+	int pulsecount_start = enc_data.pulsecount;
+	udelay(10000);
+	get_pulse_count(&enc_data);
+	int pulsecount_end = enc_data.pulsecount;
+	int puls = pulsecount_start - pulsecount_end;
+	int countspeed = puls *10;	
+	countspeed = arg->speed;
 	return 0;
 }
 EXPORT_SYMBOL(getSpeed);

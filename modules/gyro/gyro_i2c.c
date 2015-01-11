@@ -1,4 +1,4 @@
-// gyro i2c functions
+// MPU6050 i2c functions
 
 #include <linux/module.h>
 #include <linux/platform_device.h>

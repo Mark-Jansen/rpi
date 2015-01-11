@@ -8,3 +8,4 @@ Module.symvers
 modules.order
 build/
 application/libgeneric.a
+application/libhardware.a

@@ -1,17 +1,8 @@
-#include <iostream>
-#include <unistd.h>
-#include "Gyro.h"
-
-using std::cout;
-using std::endl;
+#include "Controller.h"
 
 int main()
 {
-	Gyro gyro;
-	cout << "Sampling gyro" << endl;
-	gyro.start();
-	sleep(40);
-	gyro.stop();
-
+	Controller controller;
+	return controller.run();
 	return 0;
 }

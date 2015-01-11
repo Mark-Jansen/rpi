@@ -18,13 +18,6 @@ struct motor_driver_setting {
 	int pwm_duty_cycle;
 };
 
-/*
-struct motor_driver_setting {
-	int pwm_duty_cycle;
-	int direction_pinL;   // 0 or 1 to turn left or right
-	int direction_pinR;	  // 0 or 1 to turn left or right	
-};*/
-
 struct motor_driver_encoder_data {
 	int speed;
 	int direction;      // 0 is left , 1 is right

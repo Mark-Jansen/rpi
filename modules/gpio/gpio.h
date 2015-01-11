@@ -14,37 +14,35 @@ struct gpio_status {
 struct GpioRegisters
 {
 	// function select
-	int GPFSEL[6];		// GPIO FUNCTION SELECT:	use this register to set the function to input, output or alternative
-	int Reserved1;
+	long int GPFSEL[6];		// GPIO FUNCTION SELECT:	use this register to set the function to input, output or alternative
+	long int Reserved1;
 	// output
-	int GPSET[2];		// GPIO SET: 				Use this register to set outputvalue to 1	
-	int Reserved2;
-	int GPCLR[2];		// GPIO CLEAR: 				Use this register to set outputvalue to 0	
-	int Reserved3;
+	long int GPSET[2];		// GPIO SET: 				Use this register to set outputvalue to 1	
+	long int Reserved2;
+	long int GPCLR[2];		// GPIO CLEAR: 				Use this register to set outputvalue to 0	
+	long int Reserved3;
 	// input
-	int GPLEV[2];		// GPIO LEVEL:				Use this register to read the actuel value of the pin 
-	int Reserved4;
+	long int GPLEV[2];		// GPIO LEVEL:				Use this register to read the actuel value of the pin 
+	long int Reserved4;
 	// GPIO Pin Detect
-	int GPEDS[2];		// GPIO Pin Event Detect Status			// this register record level and edge event 
-	int Reserved5;
-	int GPREN[2];		// GPIO Pin Rising Edge Detect Enable
-	int Reserved6;
-	int GPFEN[2];		// GPIO Pin Falling Edge Detect Enable
-	int Reserved7;
-	int GPHEN[2];		// GPIO Pin High Detect Enable
-	int Reserved8;
-	int GPLEN[2];		// GPIO Pin Low Detect Enable
-	int Reserved9;
-	int GPAREN[2];		// GPIO Pin Async. Rising Edge Detect
-	int Reserved10;
-	int GPAFEN[2];		// GPIO Pin Async. Falling Edge Detect
-	int Reserved11;
+	long int GPEDS[2];		// GPIO Pin Event Detect Status			// this register record level and edge event 
+	long int Reserved5;
+	long int GPREN[2];		// GPIO Pin Rising Edge Detect Enable
+	long int Reserved6;
+	long int GPFEN[2];		// GPIO Pin Falling Edge Detect Enable
+	long int Reserved7;
+	long int GPHEN[2];		// GPIO Pin High Detect Enable
+	long int Reserved8;
+	long int GPLEN[2];		// GPIO Pin Low Detect Enable
+	long int Reserved9;
+	long int GPAREN[2];		// GPIO Pin Async. Rising Edge Detect
+	long int Reserved10;
+	long int GPAFEN[2];		// GPIO Pin Async. Falling Edge Detect
+	long int Reserved11;
 	// Pull-up/down
-	int GPPUD;			// GPIO Pin Pull-up/down Enable
-	int GPPUDCLK[2];	// GPIO Pin Pull-up/down Enable Clock
+	long int GPPUD;			// GPIO Pin Pull-up/down Enable
+	long int GPPUDCLK[2];	// GPIO Pin Pull-up/down Enable Clock
 };
-
-
 
 /* function: check datasheet for pin function */
 #define 	INPUT				0b000		// check datasheet
@@ -69,20 +67,6 @@ struct GpioRegisters
 #define		PULL_DOWN_ENABLE 	0b01		// for use pull down
 #define		PULL_UP_ENABLE 		0b10		// for use pull up
 #define		PULL_OFF		 	0b00		// for not use pull up/down
-
-// interrupt (test)
-#define 	INTERRUPT_ADDRES		0x7E00B000
-#define 	PENDING_BASIC			0x200
-#define 	PENDING_1				0x204
-#define 	PENDING_2				0x208
-#define 	FIQ						0x20C
-#define 	ENABLE_IRQ_1			0x210
-#define 	ENABLE_IRQ_2			0x214
-#define 	ENABLE_IRQ_BASIC		0x218
-#define 	DISABLE_IRQ_1			0x21C
-#define 	DISABLE_IRQ_2			0x220
-#define 	DISABLE_IRQ_BASIC		0x224
-
 
 #define THERMIOC_MAGIC_GPIO			'G'
 
