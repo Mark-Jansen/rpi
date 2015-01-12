@@ -23,7 +23,7 @@ std::ostream& logger(int level);
 	} while( 0 )
 
 #define ERR(log)		X_LOGIF(LOGLEVEL_ERR, log)
-#define WARN(log)	X_LOGIF(LOGLEVEL_WARN, log)
+#define WARN(log)		X_LOGIF(LOGLEVEL_WARN, log)
 #define LOG(log)		X_LOGIF(LOGLEVEL_LOG, log)
 
 #endif // GENERIC_LOG_H
