@@ -36,7 +36,7 @@
 #define MSMODE  					 2
 #define DEFAULT_PWM_PIN             18
 #define COUNTS					   256
-int mode = PWMMODE; // this is a standard pwm mode            
+int mode = MSMODE; // this is a standard pwm mode            
 
 struct PwmRegisters
 {
