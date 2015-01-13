@@ -9,6 +9,7 @@ TARGETS = adc \
 		ultrasoon \
 		pwm \
 		gyro \
+		encoder\
 		motor_driver
 
 PREFIX = $(shell echo `pwd`)/../build/modules/

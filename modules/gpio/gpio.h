@@ -8,6 +8,7 @@ struct gpio_status {
 	int function;		// use defines (INPUT, OUTPUT, ALT0, ALT1, ALT2, ALT3, ALT4 or ALT5)
 	int pull_up_down;	// use defines (PULL_DOWN_ENABLE, PULL_UP_ENABLE, PULL_OFF)
 	int event_detect;	// use defines (NO_DETECT, RISING_EDGE_DETECT, FALLING_EDGE_DETECT, LOW_DETECT, HIGH_DETECT, ASYNC_RISING_EDGE_DETECT or ASYNC_FALLING_EDGE_DETECT
+	int irqCount;		// the number of interrupts since last read
 };
 
 /* Gpio registers: check datasheet for more information */
@@ -58,10 +59,6 @@ struct GpioRegisters
 #define  	NO_DETECT					0
 #define  	RISING_EDGE_DETECT			1
 #define  	FALLING_EDGE_DETECT			2
-#define  	LOW_DETECT 					3
-#define  	HIGH_DETECT					4
-#define  	ASYNC_RISING_EDGE_DETECT	5
-#define  	ASYNC_FALLING_EDGE_DETECT	6
 
 // pull up/down
 #define		PULL_DOWN_ENABLE 	0b01		// for use pull down
@@ -73,10 +70,12 @@ struct GpioRegisters
 #define GPIO_WRITE					_IOW(THERMIOC_MAGIC_GPIO, 0, struct gpio_status)
 #define GPIO_READ					_IOR(THERMIOC_MAGIC_GPIO, 1, struct gpio_status)
 #define GPIO_SET_CONFIG				_IOW(THERMIOC_MAGIC_GPIO, 2, struct gpio_status)
+#define GPIO_GET_IRQCOUNT			_IOR(THERMIOC_MAGIC_GPIO, 3, struct gpio_status)
 
 /* export symbols */
 int gpio_write(struct gpio_status* arg);		// write a value to a gpiopin
 int gpio_read(struct gpio_status* arg);			// read actual value of gpiopin
 int gpio_set_config(struct gpio_status* arg);	// set function and value to a gpiopin
+int gpio_get_irqCount(struct gpio_status* arg);	// set function and value to a gpiopin
 
 #endif // GPIO_H

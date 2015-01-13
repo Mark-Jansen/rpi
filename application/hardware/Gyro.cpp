@@ -1,10 +1,21 @@
 #define _GLIBCXX_USE_NANOSLEEP		// otherwise we can't use sleep_for...
 #include "Gyro.h"
+<<<<<<< HEAD
 #include <gyro/gyro.h>
+=======
+
+>>>>>>> master
 #include <cmath>
 #include <iostream>
 #include <iomanip>
 
+<<<<<<< HEAD
+=======
+#include <generic/Logger.h>
+#include <gyro/gyro.h>
+
+
+>>>>>>> master
 static const float kGyroSensitivity = 131;
 static int kNumCalibrationSamples = 10;
 
@@ -62,7 +73,11 @@ void Gyro::calibrate()
 		std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
 	}
 	if( good_samples != kNumCalibrationSamples ) {
+<<<<<<< HEAD
 		std::cerr << "Problem calibrating!!" << std::endl;
+=======
+		ERR("Problem calibrating!");
+>>>>>>> master
 	}
 	mInitialGyro /= good_samples;
 	mInitialAccel /= good_samples;
@@ -71,8 +86,14 @@ void Gyro::calibrate()
 void Gyro::onBeforeRun()
 {
 	if( !mSensor.isOpen() ) {
+<<<<<<< HEAD
 		std::cerr << "Sensor not opened..." << std::endl;
 		stop();
+=======
+		ERR("Sensor not opened...");
+		stop();
+		return;
+>>>>>>> master
 	}
 	if( !mLastAngleTick ) {
 		calibrate();
@@ -110,11 +131,18 @@ void Gyro::onRun()
 		float alpha = 0.96;
 		Vec3f angle = gyro * alpha + accel * (1.f - alpha);
 
+<<<<<<< HEAD
 		std::cout << ", final: " << std::setw(10) << angle.x << ", " << std::setw(10) << angle.y;
 
 		mLastAngle = angle;
 		mLastAngleTick = tick;
 
 		std::cout << std::endl;
+=======
+		LOG("Result: " << std::setw(10) << angle.x << ", " << std::setw(10) << angle.y);
+
+		mLastAngle = angle;
+		mLastAngleTick = tick;
+>>>>>>> master
 	}
 }

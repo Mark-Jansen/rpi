@@ -3,6 +3,7 @@
 
 // maybe move the device names to their own headers?
 
+<<<<<<< HEAD
 #define GPIO_DEVICE				"/dev/gpio"
 
 
@@ -17,12 +18,25 @@
 
 #define BATTERY_DEVICE			"/dev/battery"
 
+=======
+
+
+#define BUTTON_PIN_POWER		11
+
+
+
+#define LED_PIN_POWER			25
+#define LED_PIN_READY			24
+
+
+>>>>>>> master
 #define BATTERY_CHECK_SECONDS	5
 #define BATTERY_BLINK_LEVEL		15
 #define BATTERY_WARN_LEVEL		10
 #define BATTERY_SHUTDOWN_LEVEL	5
 
 
+<<<<<<< HEAD
 #define MOTOR_DEVICE			"/dev/motor"
 
 #define MOTOR_L_PWM				2
@@ -47,5 +61,25 @@
 #define ULTRASOON_B_TRIGGER		130
 #define ULTRASOON_B_ECHO		141
 #define ULTRASOON_B_TYPE		1
+=======
+#define MOTOR_L_PWM				18
+#define MOTOR_L_FORWARD			0
+#define MOTOR_L_REVERSE			0
+#define MOTOR_L_ENCODER_1		0
+#define MOTOR_L_ENCODER_2		0
+
+#define MOTOR_R_PWM				23
+#define MOTOR_R_FORWARD			0
+#define MOTOR_R_REVERSE			0
+#define MOTOR_R_ENCODER_1		0
+#define MOTOR_R_ENCODER_2		0
+
+
+#define ULTRASOON_F_TRIGGER		28
+#define ULTRASOON_F_ECHO		30
+
+#define ULTRASOON_B_TRIGGER		29
+#define ULTRASOON_B_ECHO		31
+>>>>>>> master
 
 #endif // BALANCERDEFINES_H

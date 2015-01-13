@@ -8,7 +8,7 @@ struct 	encoder_data {
 	int direction;      // 0 is left , 1 is right
 };
 
-#define THERMIOC_MAGIC_MOTOR_DRIVER 	'E'
+#define THERMIOC_MAGIC_ENCODER 			'E'
 #define ENCODER_SET_CONFIG				_IOW(THERMIOC_MAGIC_ENCODER, 1, struct encoder_data)
 #define ENCODER_COUNT					_IOR(THERMIOC_MAGIC_ENCODER, 2, struct encoder_data)
 #define ENCODER_DIRECTION				_IOR(THERMIOC_MAGIC_ENCODER, 3, struct encoder_data)

@@ -12,7 +12,7 @@
 #include "motor_driver.h"
 #include "../gpio/gpio.h"
 #include "../pwm/pwm.h"
-#include "../encoder/emcoder.h"
+#include "../encoder/encoder.h"
 
 #define DRV_NAME			"motor_driver"
 #define DRV_REV				"r1"
@@ -93,7 +93,7 @@ int getSpeed(struct motor_driver_encoder_data* arg)
 {
 	get_pulse_count(&enc_data);
 	int pulsecount_start = enc_data.pulsecount;
-	udelay(10000);
+	udelay(1000);
 	get_pulse_count(&enc_data);
 	int pulsecount_end = enc_data.pulsecount;
 	int puls = pulsecount_start - pulsecount_end;

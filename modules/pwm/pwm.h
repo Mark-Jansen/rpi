@@ -11,6 +11,8 @@ struct pwm_settings {
 };
 
 
+#define PWM_DEVICE			"/dev/pwm"
+
 #define PWM_THERMIOC_MAGIC			'P'
 
 #define PWM_SET_SETTINGS           _IOW(PWM_THERMIOC_MAGIC,  0, struct pwm_settings)

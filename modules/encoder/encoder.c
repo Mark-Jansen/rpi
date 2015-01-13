@@ -6,12 +6,13 @@
 #include <asm/io.h>
 #include <mach/platform.h>
 
+#include "encoder.h"
 #include "../gpio/gpio.h"
+
 
 #define DRV_NAME			"encoder"
 #define DRV_REV				"r1"
 #define ENCODER_MAJOR	0
-
 
 
 #define trace(format, arg...) do { if( debug & 1 ) pr_info( DRV_NAME ": %s: " format "\n", __FUNCTION__, ## arg ); } while (0)
@@ -125,7 +126,7 @@ static ssize_t show_data(struct device *dev, struct device_attribute *attr, char
 {
 	struct encoder_data encdata;
 	trace("");
-	if( motor_driver_set_config( &mconfig ) ) {
+	if( encoder_data_set_config( &encdata ) ) {
 		return snprintf( buf, PAGE_SIZE, "Failed to read the config\n" );	
 	}else{
 		return snprintf(buf, PAGE_SIZE, "pinnr: %db, enc1pinnr: %db, enc2pinnr: %db/n",encdata.encoder1_pinnr,encdata.encoder2_pinnr);
@@ -178,7 +179,7 @@ out:
 	return ret;
 }
 
-static void __exit motor_driver_exit(void)
+static void __exit encoder_exit(void)
 {
 	trace("");
 	

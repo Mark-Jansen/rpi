@@ -17,6 +17,8 @@ struct ultrasoon_config{
 #define	HIGH			1
 #define LOW			0
 
+#define ULTRASOON_DEVICE		"/dev/ultrasoon"
+
 #define THERMIOC_MAGIC_ULTRA	'E'
 #define ULTRASOON_GET_DISTANCE	_IOR(THERMIOC_MAGIC_ULTRA, 0, struct ultrasoon_data) 	
 
