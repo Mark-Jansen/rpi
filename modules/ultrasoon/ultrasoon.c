@@ -24,9 +24,9 @@ static struct device* g_Device = NULL;
 // spinlock used to protect the global config
 static DEFINE_SPINLOCK(g_Lock);
 static struct ultrasoon_config g_Config = {
-	.pinNr_Trigger = 23,
-	.pinNr_echo_1 = 24,
-	.pinNr_echo_2 = 25
+	.pinNr_Trigger = 28,
+	.pinNr_echo_1 = 30,
+	.pinNr_echo_2 = 31
 };
 
 

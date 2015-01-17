@@ -5,7 +5,7 @@
 struct led_status {
 	int pinNr;	
 	int value;			// ON/OFF	
-	int blinkTimer;		// mSec
+	int blinkTimer;		// uSec
 };
 
 // 
