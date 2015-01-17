@@ -3,6 +3,7 @@
 
 #include <iostream>
 
+#include <generic/Logger.h>
 #include "BalancerDefines.h"
 
 Led::Led(int pinNr, int blinkTimer)
@@ -54,6 +55,6 @@ void Led::write( int ioctl, int value )
 	ls.blinkTimer = mBlinkTimer;
 	ls.value = value;
 	if( !mSensor.ioctl( ioctl, ls ) ) {
-		std::cerr << "Error writing to the led" << std::endl;
+		ERR("Writing to led on pin " << mPinNr);
 	}
 }

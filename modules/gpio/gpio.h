@@ -65,6 +65,8 @@ struct GpioRegisters
 #define		PULL_UP_ENABLE 		0b10		// for use pull up
 #define		PULL_OFF		 	0b00		// for not use pull up/down
 
+#define GPIO_DEVICE				"/dev/gpio"
+
 #define THERMIOC_MAGIC_GPIO			'G'
 
 #define GPIO_WRITE					_IOW(THERMIOC_MAGIC_GPIO, 0, struct gpio_status)

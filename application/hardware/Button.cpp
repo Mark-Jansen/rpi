@@ -2,6 +2,7 @@
 #include <gpio/gpio.h>
 #include <iostream>
 #include "BalancerDefines.h"
+#include <generic/Logger.h>
 
 Button::Button( int pin )
 	: mSensor( GPIO_DEVICE, O_RDWR )
@@ -40,8 +41,8 @@ void Button::onBeforeRun()
 	gs.pinNr = mPin;
 	gs.function = INPUT;
 	if( !mSensor.ioctl( GPIO_SET_CONFIG, gs ) ) {
-		// abort..
-		std::cerr << "Could not initialize a button" << std::endl;
+		ERR("Could not initialize button on pin " << mPin);
+		stop();
 	}
 }
 

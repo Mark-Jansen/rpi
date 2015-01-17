@@ -13,6 +13,8 @@ struct battery_config {
 	int sample_interval;	// the number of ms between samples
 };
 
+#define BATTERY_DEVICE			"/dev/battery"
+
 #define BATT_THERMIOC_MAGIC		'B'
 #define BATTERY_GET_CHARGE		_IOR(BATT_THERMIOC_MAGIC, 0, struct battery_charge)
 
