@@ -124,7 +124,7 @@ void gpio_reset_all_interrupt_event(void)
 		if(gpio_irqs[i] > 0)				// when there is an interrupt available
 		{
 			free_irq(gpio_irqs[i], NULL);	// free interrupt
-			gpio_irqs = 0;
+			gpio_irqs[i] = 0;
 		}
 	}
 }
