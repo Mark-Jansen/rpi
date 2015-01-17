@@ -203,6 +203,7 @@ int main()
 					return -1;
 				}
 				cout << "value of gpiopin :" << gpio_test.pinNr << " = "<<  gpio_test.value << endl;
+				cout << "value of irqCount :" << gpio_test.pinNr << " = "<<  gpio_test.irqCount << endl;
 				break;	
 			case '4':
 				cout << "pinnumber to set pull up/down" << endl;

@@ -6,7 +6,7 @@
 // ====                                                                         ====
 // ==== Author    : Stefan van Nunen    			                            ====
 // ====                                                                         ====
-// ==== History   : Version 1.00                                                ====
+// ==== History   : Version 2.00                                                ====
 // ====             								                            ====
 // ====                     							                        ====
 // ====                                                                         ====
@@ -33,7 +33,7 @@
 // ====   Defines	                                                            ====
 // =================================================================================
 #define DRV_NAME		"gpio"
-#define DRV_REV			"r1"
+#define DRV_REV			"r2"
 #define DRV_MAJOR		0
 
 #define trace(format, arg...) do { if( debug & 1 ) pr_info( DRV_NAME ": %s: " format "\n", __FUNCTION__, ## arg ); } while (0)
@@ -57,20 +57,19 @@ static int debug = 0;
 module_param(debug, int, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
 
-int gpio_irqs[] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 				// 54 gpio pins default is -1
-					   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-					   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-					   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-					   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-					   -1, -1, -1, -1};							
-							 
-							 
-int gpio_interrupt_counter[] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 // 54 gpio pins default is -1
-							 -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-							 -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-							 -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-							 -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-							 -1, -1, -1, -1};					
+ int gpio_irqs[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 				// 54 gpio pins default is -1
+					 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+					 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+					 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+					 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+					 0, 0, 0, 0};													 
+				
+ int gpio_interrupt_counter[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 				// 54 gpio pins default is -1
+								  0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+								  0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+								  0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+								  0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+								  0, 0, 0, 0};					
 
 // =================================================================================
 // void wait_cycles()
@@ -95,14 +94,17 @@ void wait_cycles(int cycles)
 static irqreturn_t gpio_isr(int irq, void *data)
 {
 	int i = 0;	
-	
-	gpio_interrupt_counter[irq] += 1;;
+	unsigned long flags;
+
 	for(i=0; i<53; i++)
 	{
 		if(irq == gpio_irqs[i])	
 		{
 			// when there is an interrupt increment the interrupt counter
-			gpio_interrupt_counter[i] ++;
+			spin_lock_irqsave( &g_Lock, flags );			
+			gpio_interrupt_counter[i] += 1;
+			udelay(10);	// for debouncing button
+			spin_unlock_irqrestore( &g_Lock, flags );
 		}	
 	}
 	return IRQ_HANDLED;
@@ -119,7 +121,11 @@ void gpio_reset_all_interrupt_event(void)
 	int i = 0;
 	for(i=0; i<54; i++)
 	{
-		free_irq(gpio_irqs[i], NULL);
+		if(gpio_irqs[i] > 0)				// when there is an interrupt available
+		{
+			free_irq(gpio_irqs[i], NULL);	// free interrupt
+			gpio_irqs = 0;
+		}
 	}
 }
 
@@ -148,7 +154,7 @@ int gpio_set_event_detect(int pinnr, int event)
 		// check if request is succefull	
 		if(ret < 0) 
 		{
-			printk(KERN_ERR "Unable to request IRQ: %d\n", ret);
+			error("Unable to request IRQ: %d", ret );
 			return -1;
 		}
 		
@@ -164,32 +170,13 @@ int gpio_set_event_detect(int pinnr, int event)
 			case FALLING_EDGE_DETECT:
 				ret = request_irq(gpio_irqs[pinnr], gpio_isr, IRQF_TRIGGER_FALLING | IRQF_DISABLED, "gpio_interrupt", NULL);
 				break;	
-/*			// Geeft foutmelding (maar hebben we denk ik niet nodig, anders zou deze blijven hangen in de interrupt)
-			case LOW_DETECT:
-				ret = request_irq(gpio_irqs[pinnr], gpio_isr, IRQF_TRIGGER_LOW, "gpio_interrupt", NULL);
-				break;
-			case HIGH_DETECT:
-				ret = request_irq(gpio_irqs[pinnr], gpio_isr, IRQF_TRIGGER_HIGH, "gpio_interrupt", NULL);
-				break;
-			case ASYNC_RISING_EDGE_DETECT:
-				ret = request_irq(gpio_irqs[pinnr], gpio_isr, IRQF_TRIGGER_NONE | IRQF_DISABLED, "gpi_interrupt", NULL);
-				break;	
-			case ASYNC_FALLING_EDGE_DETECT:
-				ret = request_irq(gpio_irqs[pinnr], gpio_isr, IRQF_TRIGGER_NONE | IRQF_DISABLED, "gpi_interrupt", NULL);
-				break;	*/
 			default:
-				printk(KERN_ERR "Set interrupt failed.. \n");
+				error("Set interrupt failed..	event = %d", event );
 				gpio_irqs[pinnr] = 0;
 				break;		
 		}
 	}
-	
-	// when we want no detect en there is detect. 
-	if( (event < 1) & (gpio_irqs[pinnr]) )	
-	{
-		free_irq(gpio_irqs[pinnr], NULL);	// remove detect
-		gpio_irqs[pinnr] = 0;				// remove interrupt
-	}
+
 	return 0;
 }
 /******************************  END INTERRUPTS  ******************************/	
@@ -204,11 +191,12 @@ int gpio_set_pull_up_down(int pinnr, int pud)
 	int registerIndex = pinnr/32;
 	int pin = pinnr%32;
 	unsigned long flags;	
-	
-	if(pud != 0)
+
+	// when pud is a legal value (pull-up, pull-down, or pull-off)
+	if( (PULL_DOWN_ENABLE >= pud) && (pud >= PULL_OFF) )
 	{
 		spin_lock_irqsave( &g_Lock, flags );
-		gpioRegister->GPPUD = pud;						// set the required control signal	
+		gpioRegister->GPPUD = pud;							// set the required control signal	
 		wait_cycles(150);	
 		gpioRegister->GPPUDCLK[registerIndex] = 1 << pin;	// clock the control signal into the GPIO pads you wish to modify
 		wait_cycles(150);
@@ -216,6 +204,11 @@ int gpio_set_pull_up_down(int pinnr, int pud)
 		gpioRegister->GPPUDCLK[registerIndex] = 0 << pin;	// Remove clock
 		spin_unlock_irqrestore( &g_Lock, flags );		
 	}
+	else
+	{
+		error("illegal pull up/down value. value = %d ", pud );
+	}
+	
 	return 0;
 }
 
@@ -257,6 +250,9 @@ int gpio_set_config(struct gpio_status* arg)
 	//=====	Set event detect	======//
 	gpio_set_event_detect(arg->pinNr, arg->event_detect);
 
+	//=====	Clear irqCount	======//
+	arg->irqCount = 0;
+	
 	return 0;	// for debug
 }
 EXPORT_SYMBOL(gpio_set_config);
@@ -274,37 +270,29 @@ int gpio_read(struct gpio_status* arg)
 	int readRegister_2;
 	int registerIndex;
 	int pinMask;
-	int interruptCounter = 0;	
 	unsigned long flags;
 	
 	trace("");
 	
 	// check right register
-	if ((gpioPin >= 0) && (gpioPin <= 54))	// GPIO Pin is available
+	if ((gpioPin >= 0) && (gpioPin <= 53))	// GPIO Pin is available
 	{
 		registerIndex = gpioPin/32;			// find register for this gpioPin
 		pinMask = 1 << gpioPin;				// make pinMask for the right pinNr
-		if(arg->event_detect == NO_DETECT)
-		{		
-			// Read actual value with GPLEV
-			spin_lock_irqsave( &g_Lock, flags );
-			readRegister = gpioRegister->GPLEV[registerIndex];	// read the register
-			spin_unlock_irqrestore( &g_Lock, flags );
-			readRegister_2 = readRegister & pinMask;	
-			arg->value = readRegister_2 >> gpioPin;				// Read the gpioPin with pinMask, use shift for the value "0" or "1" 
-		}
-		else
-		{	
-			interruptCounter = gpio_interrupt_counter[arg->pinNr];
-			gpio_interrupt_counter[arg->pinNr] = 0;
-			arg->value = interruptCounter;
-		}
+		
+		// Read actual value with GPLEV
+		spin_lock_irqsave( &g_Lock, flags );
+		readRegister = gpioRegister->GPLEV[registerIndex];		// read the register
+		spin_unlock_irqrestore( &g_Lock, flags );
+		readRegister_2 = readRegister & pinMask;				// select only the correct pin 	
+		arg->value = readRegister_2 >> gpioPin;					// Use shift for the value "0" or "1" 	
+		arg->irqCount = gpio_interrupt_counter[arg->pinNr];	
+		gpio_interrupt_counter[arg->pinNr] = 0;
 	}
 	else
 	{
-		printk(KERN_INFO "PinNr not available. \n");
+		error("PinNr not available. PinNr = %d ", gpioPin);
 	}
-
 	return 0;
 }
 EXPORT_SYMBOL(gpio_read);
@@ -325,14 +313,15 @@ int gpio_write(struct gpio_status* arg)
 	trace("");
 		
 	// check right register
-	if ((pin >= 0) && (pin <= 54))	// pin is available
+	if ((pin >= 0) && (pin <= 53))	// pin is available
 	{
 		registerNr = pin/32;		// find register for this pin
 		pin = pin%32;				// find pin in register
 	}
 	else
 	{
-		printk(KERN_INFO "PinNr not available. \n");
+		error("PinNr not available. PinNr = %d ", pin);
+		return -1;
 	}
 
 	// set outputvalue with the right register
@@ -350,6 +339,22 @@ int gpio_write(struct gpio_status* arg)
 	return 0;
 }
 EXPORT_SYMBOL(gpio_write);
+
+
+
+// =================================================================================
+// int gpio_get_irqCount(struct gpio_status* arg)
+// Pre : 
+// Post: set interrupt counts in irqCount
+// =================================================================================
+int gpio_get_irqCount(struct gpio_status* arg)
+{
+	arg->irqCount = gpio_interrupt_counter[arg->pinNr];	// read interrupt counter
+	gpio_interrupt_counter[arg->pinNr] = 0;				// clear interrupt counter
+	
+	return 0;
+}
+EXPORT_SYMBOL(gpio_get_irqCount);
 
 
 // =================================================================================
@@ -381,7 +386,13 @@ static long gpio_ioctl(struct file *file, unsigned int command, unsigned long ar
 			if( copy_from_user( &status, (void*)arg, sizeof(struct gpio_status) ) )
 				return -EFAULT;
 			ret = gpio_set_config( &status );
-
+			break;
+		case GPIO_GET_IRQCOUNT:
+			if( copy_from_user( &status, (void*)arg, sizeof(struct gpio_status) ) )
+				return -EFAULT;
+			ret = gpio_get_irqCount( &status );
+			if( copy_to_user( (void*)arg, &status, sizeof(struct gpio_status) ) )
+				return -EFAULT;
 			break;
 		default:
 			break;
@@ -389,39 +400,18 @@ static long gpio_ioctl(struct file *file, unsigned int command, unsigned long ar
 	return ret;
 }
 
-static int gpio_open(struct inode *inode, struct file *file)
-{
-	trace("");
-	return 0;
-}
-
-static int gpio_release(struct inode *inode, struct file *file)
-{
-	trace("");
-	return 0;
-}
 
 static const struct file_operations fops = {
 	.owner				= THIS_MODULE,
-	.open				= gpio_open,
-	.release			= gpio_release,
-	.unlocked_ioctl		= gpio_ioctl,
+	.unlocked_ioctl		= gpio_ioctl
 };
 
 
 //sysfs
 static ssize_t read_gpio(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	struct gpio_status status;
-	int ret;
 	trace("");
-	if( sscanf(buf, "%d", &status.pinNr) > 1 ) {
-		ret = ( gpio_read( &status  ));
-		return snprintf(buf, PAGE_SIZE, "gpioPin %i  \t has value \t: %i\n",status.value, ret);		
-	} else {
-		error( "error pinnr not available\n" );
-	}
-	return 0;
+	return snprintf(buf, PAGE_SIZE, "GPFSEL0: %d\n GPFSEL1: %d\n GPFSEL2: %d\n GPLEV0: %d\n GPLEV0: %d\n", (int)gpioRegister->GPFSEL[0], (int)gpioRegister->GPFSEL[1], (int)gpioRegister->GPFSEL[2], (int)gpioRegister->GPLEV[0], (int)gpioRegister->GPLEV[1]);
 }
 
 static DEVICE_ATTR( status, S_IWUSR | S_IRUGO, read_gpio, NULL );
@@ -482,8 +472,6 @@ static void __exit gpio_exit(void)
 	class_destroy( g_Class );
 	unregister_chrdev( g_Major, DRV_NAME );
 
-	gpio_reset_all_interrupt_event();	// INTERRUPT TEST!!!
-	
 	info("unloaded.");
 }
 

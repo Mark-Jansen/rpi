@@ -133,7 +133,7 @@ int main()
 				cin >> pinnrBlink;
 				cin.ignore();
 				blink_led.pinNr = pinnrBlink;
-				blink_led.blinkTimer = 1000;
+				blink_led.blinkTimer = 500000.;
 				if( ioctl(fd, LED_SET_CONFIG, &blink_led) == -1) 
 				{
 					perror( "ioctl LED_SET_CONFIG:  failed" );
