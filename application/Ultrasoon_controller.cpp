@@ -27,7 +27,7 @@ Ultrasoon_controller::~Ultrasoon_controller()
 
 int Ultrasoon_controller::delayMS() const
 {
-	return 100;	// TODO: determine correct timeout
+	return 500;	// Minimum timeout
 }
 
 void Ultrasoon_controller::onBeforeRun()

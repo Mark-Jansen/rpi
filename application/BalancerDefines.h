@@ -63,16 +63,16 @@
 #define ULTRASOON_B_TYPE		1
 =======
 #define MOTOR_L_PWM				18
-#define MOTOR_L_FORWARD			0
-#define MOTOR_L_REVERSE			0
-#define MOTOR_L_ENCODER_1		0
-#define MOTOR_L_ENCODER_2		0
+#define MOTOR_L_FORWARD			4
+#define MOTOR_L_REVERSE			17
+#define MOTOR_L_ENCODER_1		10
+#define MOTOR_L_ENCODER_2		9
 
 #define MOTOR_R_PWM				23
-#define MOTOR_R_FORWARD			0
-#define MOTOR_R_REVERSE			0
-#define MOTOR_R_ENCODER_1		0
-#define MOTOR_R_ENCODER_2		0
+#define MOTOR_R_FORWARD			27
+#define MOTOR_R_REVERSE			22
+#define MOTOR_R_ENCODER_1		8
+#define MOTOR_R_ENCODER_2		7
 
 
 #define ULTRASOON_F_TRIGGER		28
