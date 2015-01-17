@@ -9,7 +9,7 @@ endif
 
 CROSS_COMPILE:=$(L_BUILDROOT)/output/host/usr/bin/arm-linux-
 
-all: adc_test test_ultra gyro_test testpwm motor_driver_test
+all: adc_test test_ultra gyro_test testpwm motor_driver_test motor_driver_test_old
 
 .PHONY: all, clean
 
@@ -33,7 +33,11 @@ motor_driver_test: motor_driver_test.cpp
 	@echo "Building motor_driver_test"; \
 	$(CROSS_COMPILE)g++ motor_driver_test.cpp -o ../build/motor_driver_test -I../modules
 
+motor_driver_test_old: motor_driver_test_old.cpp
+	@echo "Building motor_driver_test"; \
+	$(CROSS_COMPILE)g++ motor_driver_test_old.cpp -o ../build/motor_driver_test_old -I../modules
+	
 clean:
 	@echo "Cleaning test"; \
-	rm -f *.o ../build/adc_test ../build/testpwm ../build/gyro_test ../build/test_ultrasoon ../build/motor_driver_test
+	rm -f *.o ../build/adc_test ../build/testpwm ../build/gyro_test ../build/test_ultrasoon ../build/motor_driver_test ../build/motor_driver_test_old
 
