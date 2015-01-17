@@ -10,7 +10,7 @@ struct 	encoder_data {
 
 #define THERMIOC_MAGIC_ENCODER 			'E'
 #define ENCODER_SET_CONFIG				_IOW(THERMIOC_MAGIC_ENCODER, 1, struct encoder_data)
-#define ENCODER_COUNT					_IOR(THERMIOC_MAGIC_ENCODER, 2, struct encoder_data)
+#define ENCODER_SPEED					_IOR(THERMIOC_MAGIC_ENCODER, 2, struct encoder_data)
 #define ENCODER_DIRECTION				_IOR(THERMIOC_MAGIC_ENCODER, 3, struct encoder_data)
 
 
@@ -31,7 +31,7 @@ int get_pulse_count(struct encoder_data* arg);
 // =================================================================================
 // int get_direction(struct encoder_data* arg);
 // Pre : 
-// Post: get the direction
+// Post: get the direction 0 = left 1 = right
 // =================================================================================
 int get_direction(struct encoder_data* arg);
 

@@ -32,8 +32,6 @@ using namespace std;
 // =================================================================================
 struct motor_driver_setting motor_A;   // with sw pwm
 struct motor_driver_setting motor_B;	  // with hw pwm
-struct motor_driver_encoder_data motor_data_A;
-struct motor_driver_encoder_data motor_data_B;
 struct encoder_data encoder_A;
 struct encoder_data encoder_B;
 
@@ -61,7 +59,7 @@ int write_motor(int fd,struct motor_driver_setting* config)
 {	
 	printf ("MotorApinL: %d \n", motor_A.direction_pinL);
 	printf ("MotorApinR: %d \n", motor_A.direction_pinR);
-	if( ioctl(fd, MOTOR_DRIVER_SET_CONFIG ,config ) == -1) { 
+	if( ioctl(fd, MOTOR_DRIVER_SET_SETTINGS ,config ) == -1) { 
  		perror( "ioctl set" ); 
  		close( fd ); 
  		return -1; 
@@ -79,20 +77,20 @@ int write_encoder(int fd, struct encoder_data* setting)
  	return 0; 
 }
 
-int setSpeed(int fd, struct motor_driver_setting* config)
-{
-	printf ("dutycycle_motor_A: %d \n", motor_A.pwm_duty_cycle);
-	if( ioctl(fd, MOTOR_SETSPEED,config ) == -1) { 
- 		perror( "set speed" ); 
- 		close( fd ); 
- 		return -1; 
-	}  
- 	return 0; 
-}
+ int setSpeed(int fd, struct motor_driver_setting* config)
+ {
+	 printf ("dutycycle_motor_A: %d \n", motor_A.pwm_duty_cycle);
+	 if( ioctl(fd, MOTOR_DRIVER_SET_SPEED,config ) == -1) { 
+ 		 perror( "set speed" ); 
+		 close( fd ); 
+ 		 return -1; 
+	 }  
+ 	 return 0; 
+ }
 
-int read_encoder( int fd, motor_driver_encoder_data *mded  )
+int getSpeed( int fd, motor_driver_setting *mded  )
 {
-	if( ioctl(fd, MOTOR_GETSPEED , mded ) == -1) {
+	if( ioctl(fd, MOTOR_DRIVER_GET_SPEED , mded ) == -1) {
 		perror( "ioctl get" );
 		close( fd );
 		return -1;
@@ -124,12 +122,8 @@ void init_motor_driver_setting()
 		motor_B.pwm_frequency = 10000;
 		motor_B.pwm_duty_cycle = 0;		
 }
-struct 	encoder_data {
-	int encoder1_pinnr;
-	int encoder2_pinnr;
-	int pulsecount;
-	int direction;      // 0 is left , 1 is right
-};
+
+
 void init_encoder_setting()
 {
 	encoder_A.encoder1_pinnr = 19;
@@ -192,13 +186,13 @@ int main()
 				{
 					motor_A.direction_pinL = 1;
 					motor_A.direction_pinR = 0;
-					write_motor(fd,&motor_A);
+					write_motor(fd,&motor_A);			
 				}
 				else if (!( direction != 'R' && direction != 'r'))
 				{
 					motor_A.direction_pinL = 0;
 					motor_A.direction_pinR = 1;
-					write_motor(fd,&motor_A);
+					write_motor(fd,&motor_A);	
 				}
 				break;
 			case '3':
@@ -259,13 +253,13 @@ int main()
 				setSpeed(fd,&motor_A);
 				setSpeed(fd,&motor_B);
 				break;
-			case '7':
-				
-				while(!)
-				read_encoder(fd,&motor_data_A)
+			case '7':			
+				getSpeed(fd,&motor_A);
+				cout << "Speed motor A = " + motor_A.speed << endl;
 				break;
 			case '8':
-				read_encoder(fd,&motor_data_B)
+				getSpeed(fd,&motor_B);
+				cout << "Speed motor B = " + motor_B.speed << endl;
 				break;
 			
 			case '9':

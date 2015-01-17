@@ -5,7 +5,8 @@
 #include <linux/uaccess.h>		//copy_[from/to]_user
 #include <asm/io.h>
 #include <mach/platform.h>
-
+#include <linux/interrupt.h>
+#include <asm/irq.h>
 #include "encoder.h"
 #include "../gpio/gpio.h"
 
@@ -23,13 +24,32 @@
 static int g_Major = 0;
 static struct class* g_Class = NULL;
 static struct device* g_Device = NULL;
-
+int interruptID = 0;		  		// unique interrupt ID
+volatile int encoderPulseCount = 0;	
+int ret = 0;
 static int debug = 0;
 module_param(debug, int, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
 
 struct gpio_status encoderpin1;
 struct gpio_status encoderpin2;
+
+// =================================================================================
+// deze code wordt uitgevoerd als er een interrupt is
+// =================================================================================
+static irqreturn_t isr_handler(int irq_counter, void *data)
+{
+	encoderPulseCount++;
+	return IRQ_HANDLED;
+}
+// =================================================================================
+// geeft interrupt weer vrij (als je geen interrupts meer wilt gebruiken)
+// =================================================================================
+void gpio_reset_all_interrupt_event(int irq)
+{
+	free_irq(irq, NULL);	// free interrupt
+}
+
 	
 int encoder_data_set_config(struct encoder_data* arg)
 {
@@ -47,6 +67,25 @@ int encoder_data_set_config(struct encoder_data* arg)
 	
 	gpio_set_config(&encoderpin1);
 	gpio_set_config(&encoderpin2);
+	
+		
+	// Request to IRQ
+	//interruptID = gpio_to_irq(pin);	// met deze regel zeg je dat je pin als interrupt wilt gebruiken. wat er gereturnt wordt is het unieke nr voor die interrupt
+
+	// check if request is succesfull	
+	if(ret < 0) 
+	{
+		error("Unable to request IRQ: %d", ret );
+		return -1;
+	}
+		
+	//	parameters
+	// 1e is de interrupt die je wilt gebruiken
+	// 2e is de functie die wordt aangeroepen bij een interrupt
+	// 3e is wanneer een interrupt moet zijn( voorbeeld is bij rising edge. (IRQF_DISABLED) kun je zo overnemen weet ik zo even niet wat die doet
+	// 4e is de naam
+	// 5e moet je op NULL zetten (weet zo even niet wat die doet)
+	ret = request_irq(interruptID, isr_handler, IRQF_TRIGGER_RISING | IRQF_DISABLED, "voorbeeld_interrupt", NULL);
 	return 0;
 }
 EXPORT_SYMBOL(encoder_data_set_config);
@@ -80,7 +119,7 @@ static long encoder_ioctl(struct file *file, unsigned int command, unsigned long
 				return -EFAULT;
 			ret = encoder_data_set_config( &edata );
 			break;
-		case ENCODER_COUNT:
+		case ENCODER_SPEED:
 			if( copy_from_user( &edata, (void*)arg, sizeof(struct encoder_data) ) )
 				return -EFAULT;
 			ret =  !get_pulse_count( &edata );
@@ -129,7 +168,7 @@ static ssize_t show_data(struct device *dev, struct device_attribute *attr, char
 	if( encoder_data_set_config( &encdata ) ) {
 		return snprintf( buf, PAGE_SIZE, "Failed to read the config\n" );	
 	}else{
-		return snprintf(buf, PAGE_SIZE, "pinnr: %db, enc1pinnr: %db, enc2pinnr: %db/n",encdata.encoder1_pinnr,encdata.encoder2_pinnr);
+		return snprintf(buf, PAGE_SIZE, "enc1pinnr: %i, enc2pinnr: %i/n",encdata.encoder1_pinnr,encdata.encoder2_pinnr);
 	}
 	return 0;
 }

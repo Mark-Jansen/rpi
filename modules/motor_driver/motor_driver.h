@@ -1,8 +1,6 @@
 #ifndef MOTOR_DRIVER_H
 #define MOTOR_DRIVER_H
 
-
-
 #define SW_PWM	1
 #define HW_PWM  0
 
@@ -16,38 +14,38 @@ struct motor_driver_setting {
 	int pwm_enable;
 	int pwm_frequency;
 	int pwm_duty_cycle;
-};
-
-struct motor_driver_encoder_data {
 	int speed;
 	int direction;      // 0 is left , 1 is right
 };
 
 #define THERMIOC_MAGIC_MOTOR_DRIVER 	'M'
-#define MOTOR_DRIVER_SET_CONFIG 		_IOW(THERMIOC_MAGIC_MOTOR_DRIVER, 0, struct motor_driver_setting)
-#define MOTOR_SETSPEED					_IOW(THERMIOC_MAGIC_MOTOR_DRIVER, 1, struct motor_driver_setting)
-#define MOTOR_GETSPEED					_IOR(THERMIOC_MAGIC_MOTOR_DRIVER, 2, struct motor_driver_encoder_data)
-
+#define MOTOR_DRIVER_SET_SETTINGS 					_IOW(THERMIOC_MAGIC_MOTOR_DRIVER, 0, struct motor_driver_setting)
+#define MOTOR_DRIVER_GET_SETTINGS					_IOR(THERMIOC_MAGIC_MOTOR_DRIVER, 1, struct motor_driver_setting)
+#define MOTOR_DRIVER_SET_SPEED						_IOW(THERMIOC_MAGIC_MOTOR_DRIVER, 2, struct motor_driver_setting)
+#define MOTOR_DRIVER_GET_SPEED						_IOR(THERMIOC_MAGIC_MOTOR_DRIVER, 3, struct motor_driver_setting)
+#define MOTOR_DRIVER_SET_DIRECTION					_IOW(THERMIOC_MAGIC_MOTOR_DRIVER, 4, struct motor_driver_setting)
+#define MOTOR_DIVER_GET_DIRECTION					_IOR(THERMIOC_MAGIC_MOTOR_DRIVER, 5, struct motor_driver_setting)
 
 // =================================================================================
-// int motor_driver_set_config(struct motor_driver_setting* arg)
+// int motor_driver_set_settings(struct motor_driver_setting* arg)
+// Pre : 
+// Post: set motor_driver settings
+// =================================================================================
+int motor_driver_set_settings(struct motor_driver_setting* arg);
+
+// =================================================================================
+// int motor_driver_get_settings(struct motor_driver_setting* arg)
 // Pre : 
 // Post: sets pinnumbers for use in RPI
 // =================================================================================
-int motor_driver_set_config(struct motor_driver_setting* arg);
+int motor_driver_get_settings(struct motor_driver_setting* arg);
 
 // =================================================================================
-// int setSpeed(struct motor_driver_setting* arg)
-// Pre : 
-// Post: sets the speed(pwm)and direction of the motor
+//  EXPORTED SYMBOLS
 // =================================================================================
 int setSpeed(struct motor_driver_setting* arg);
-
-// =================================================================================
-// int getSpeed(struct motor_driver_encoder_data* arg)
-// Pre : 
-// Post: returns the speed and direction of the motor
-// =================================================================================
-int getSpeed(struct motor_driver_encoder_data* arg);
+int getSpeed(struct motor_driver_setting* arg);
+int setDirection(struct motor_driver_setting* arg); 
+int getDirection(struct motor_driver_setting* arg);
 
 #endif // MOTOR_DRIVER_H
