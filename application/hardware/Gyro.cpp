@@ -1,21 +1,14 @@
 #define _GLIBCXX_USE_NANOSLEEP		// otherwise we can't use sleep_for...
 #include "Gyro.h"
-<<<<<<< HEAD
-#include <gyro/gyro.h>
-=======
 
->>>>>>> master
 #include <cmath>
 #include <iostream>
 #include <iomanip>
 
-<<<<<<< HEAD
-=======
 #include <generic/Logger.h>
 #include <gyro/gyro.h>
 
 
->>>>>>> master
 static const float kGyroSensitivity = 131;
 static int kNumCalibrationSamples = 10;
 
@@ -73,11 +66,7 @@ void Gyro::calibrate()
 		std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
 	}
 	if( good_samples != kNumCalibrationSamples ) {
-<<<<<<< HEAD
-		std::cerr << "Problem calibrating!!" << std::endl;
-=======
 		ERR("Problem calibrating!");
->>>>>>> master
 	}
 	mInitialGyro /= good_samples;
 	mInitialAccel /= good_samples;
@@ -86,14 +75,9 @@ void Gyro::calibrate()
 void Gyro::onBeforeRun()
 {
 	if( !mSensor.isOpen() ) {
-<<<<<<< HEAD
-		std::cerr << "Sensor not opened..." << std::endl;
-		stop();
-=======
 		ERR("Sensor not opened...");
 		stop();
 		return;
->>>>>>> master
 	}
 	if( !mLastAngleTick ) {
 		calibrate();
@@ -108,6 +92,17 @@ Vec3f Gyro::raw2Accel( float xout, float yout, float zout )
 	return Vec3f( roll, pitch, 0 );
 }
 
+Sample Gyro::lastSample()
+{
+	Sample s;
+	{
+		Lock l(&mDataLock);
+		s.Angle = mLastAngle;
+		s.Tick = mLastAngleTick;
+	}
+	return s;
+}
+
 // complementary filter.
 void Gyro::onRun()
 {
@@ -117,7 +112,6 @@ void Gyro::onRun()
 		Vec3f accel = raw2Accel( data.accel_x, data.accel_y, data.accel_z ) - mInitialAccel;
 		//std::cout << "Accel: " << std::setw(10) << accel.x << ", " << std::setw(10) << accel.y;
 
-		mLastTemperature = data.raw_temperature / 340.f + 36.53f;
 		Vec3f rawGyro = Vec3f( data.gyro_x, data.gyro_y, data.gyro_z ) - mInitialGyro;
 		rawGyro /= kGyroSensitivity;
 
@@ -131,18 +125,13 @@ void Gyro::onRun()
 		float alpha = 0.96;
 		Vec3f angle = gyro * alpha + accel * (1.f - alpha);
 
-<<<<<<< HEAD
-		std::cout << ", final: " << std::setw(10) << angle.x << ", " << std::setw(10) << angle.y;
+		//LOG("Result: " << std::setw(10) << angle.x << ", " << std::setw(10) << angle.y);
 
-		mLastAngle = angle;
-		mLastAngleTick = tick;
-
-		std::cout << std::endl;
-=======
-		LOG("Result: " << std::setw(10) << angle.x << ", " << std::setw(10) << angle.y);
-
-		mLastAngle = angle;
-		mLastAngleTick = tick;
->>>>>>> master
+		{
+			Lock l(&mDataLock);
+			mLastTemperature = data.raw_temperature / 340.f + 36.53f;
+			mLastAngle = angle;
+			mLastAngleTick = tick;
+		}
 	}
 }

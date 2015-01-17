@@ -95,16 +95,15 @@ static irqreturn_t gpio_isr(int irq, void *data)
 {
 	int i = 0;	
 	unsigned long flags;
-	
-	//	gpio_interrupt_counter[irq] += 1;  // nog debuggen of het werkt zonder deze regel??
+
 	for(i=0; i<53; i++)
 	{
 		if(irq == gpio_irqs[i])	
 		{
 			// when there is an interrupt increment the interrupt counter
 			spin_lock_irqsave( &g_Lock, flags );			
-			gpio_interrupt_counter[i] ++;
-			
+			gpio_interrupt_counter[i] += 1;
+			udelay(10);	// for debouncing button
 			spin_unlock_irqrestore( &g_Lock, flags );
 		}	
 	}
@@ -125,7 +124,7 @@ void gpio_reset_all_interrupt_event(void)
 		if(gpio_irqs[i] > 0)				// when there is an interrupt available
 		{
 			free_irq(gpio_irqs[i], NULL);	// free interrupt
-			
+			gpio_irqs[i] = 0;
 		}
 	}
 }
@@ -286,7 +285,9 @@ int gpio_read(struct gpio_status* arg)
 		readRegister = gpioRegister->GPLEV[registerIndex];		// read the register
 		spin_unlock_irqrestore( &g_Lock, flags );
 		readRegister_2 = readRegister & pinMask;				// select only the correct pin 	
-		arg->value = readRegister_2 >> gpioPin;					// Use shift for the value "0" or "1" 		
+		arg->value = readRegister_2 >> gpioPin;					// Use shift for the value "0" or "1" 	
+		arg->irqCount = gpio_interrupt_counter[arg->pinNr];	
+		gpio_interrupt_counter[arg->pinNr] = 0;
 	}
 	else
 	{
