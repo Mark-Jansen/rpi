@@ -1,5 +1,41 @@
 FULL=`pwd`
-for f in $FULL/*.ko; do
-        ln -s $f /lib/modules/`uname -r`
+while [[ $# > 1 ]]
+do
+	case "$1" in
+	-s|--symlink)
+		for f in $FULL/*.ko; do
+			ln -s $f /lib/modules/`uname -r`
+		done
+		depmod -a
+	;;
+	-d|--depmod)
+		depmod -a
+	;;
+	-l|--load)
+		for fullpath in $FULL/*.ko; do
+			name=${fullpath##*/}
+			mod=${name%.ko}
+			modprobe $mod
+		done
+	;;
+	-u|--unload)
+		for fullpath in $FULL/*.ko; do
+			name=${fullpath##*/}
+			mod=${name%.ko}
+			modprobe -r $mod
+		done
+	;;
+	-h|--help)
+		echo "Usage: dep [-s] [-l] [-u]"
+		echo " -s [--symlink] makes links and initializes dependencies"
+		echo " -d [--depmod] reloads module dependencies"
+		echo " -l [--load] loads all modules"
+		echo " -u [--unload] unloads all modules"
+		exit 1
+	;;
+	*)
+		exit 0
+	;;
+	esac
+	shift
 done
-depmod -a
