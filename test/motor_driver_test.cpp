@@ -109,8 +109,10 @@ void init_motor_driver_setting()
 		motor_A.pwm_channel = 1;
 		motor_A.pwm_pinnr = 18;
 		motor_A.pwm_enable = 1;
-		motor_A.pwm_frequency = 10000;
+		motor_A.pwm_frequency = 20000;
 		motor_A.pwm_duty_cycle = 0;
+		motor_A.speed = 0;
+		motor_A.direction = 0;      // 0 is left , 1 is right
 		
 		motor_B.direction_in1_pinnr = 27;
 		motor_B.direction_in2_pinnr = 22;
@@ -119,8 +121,10 @@ void init_motor_driver_setting()
 		motor_B.pwm_channel = 0;
 		motor_B.pwm_pinnr = 23;
 		motor_B.pwm_enable = 1;
-		motor_B.pwm_frequency = 10000;
-		motor_B.pwm_duty_cycle = 0;		
+		motor_B.pwm_frequency = 20000;
+		motor_B.pwm_duty_cycle = 0;
+		motor_B.speed = 0;
+		motor_B.direction = 0;      // 0 is left , 1 is right		
 }
 
 
@@ -130,7 +134,6 @@ void init_encoder_setting()
 	encoder_A.encoder2_pinnr = 21;
 	encoder_B.encoder1_pinnr = 8;
 	encoder_B.encoder2_pinnr = 7;
-
 }
 
 // =================================================================================
