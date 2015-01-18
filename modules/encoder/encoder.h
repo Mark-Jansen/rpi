@@ -4,7 +4,7 @@
 struct 	encoder_data {
 	int encoder1_pinnr;
 	int encoder2_pinnr;
-	int pulsecount;
+	int rotation_speed;
 	int direction;      // 0 is left , 1 is right
 };
 
@@ -26,7 +26,7 @@ int encoder_data_set_config(struct encoder_data* arg);
 // Pre : 
 // Post: get pulse count 
 // =================================================================================
-int get_pulse_count(struct encoder_data* arg);
+int get_rotation_speed(struct encoder_data* arg);
 
 // =================================================================================
 // int get_direction(struct encoder_data* arg);

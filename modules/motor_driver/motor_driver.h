@@ -24,7 +24,7 @@ struct motor_driver_setting {
 #define MOTOR_DRIVER_SET_SPEED						_IOW(THERMIOC_MAGIC_MOTOR_DRIVER, 2, struct motor_driver_setting)
 #define MOTOR_DRIVER_GET_SPEED						_IOR(THERMIOC_MAGIC_MOTOR_DRIVER, 3, struct motor_driver_setting)
 #define MOTOR_DRIVER_SET_DIRECTION					_IOW(THERMIOC_MAGIC_MOTOR_DRIVER, 4, struct motor_driver_setting)
-#define MOTOR_DIVER_GET_DIRECTION					_IOR(THERMIOC_MAGIC_MOTOR_DRIVER, 5, struct motor_driver_setting)
+#define MOTOR_DRIVER_GET_DIRECTION					_IOR(THERMIOC_MAGIC_MOTOR_DRIVER, 5, struct motor_driver_setting)
 
 // =================================================================================
 // int motor_driver_set_settings(struct motor_driver_setting* arg)

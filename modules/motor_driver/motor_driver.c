@@ -2,9 +2,9 @@
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/ioctl.h>
-#include <linux/delay.h> 
-#include <linux/hrtimer.h>
-#include <linux/sched.h>
+//#include <linux/delay.h> 
+//#include <linux/hrtimer.h>
+//#include <linux/sched.h>
 #include <linux/uaccess.h>		//copy_[from/to]_user
 #include <asm/io.h>
 #include <mach/platform.h>
@@ -99,6 +99,7 @@ EXPORT_SYMBOL(setSpeed);
 
 int getSpeed(struct motor_driver_setting* arg)
 {	
+	
 	return 0;
 }
 EXPORT_SYMBOL(getSpeed);
@@ -113,7 +114,9 @@ EXPORT_SYMBOL(setDirection);
 
 int getDirection(struct motor_driver_setting* arg)
 {
-  return -1;
+	get_direction(&enc_data);
+	arg->direction = enc_data.direction;
+	return 0;
 }
 EXPORT_SYMBOL(getDirection);
 
@@ -160,7 +163,7 @@ static long motor_driver_ioctl(struct file *file, unsigned int command, unsigned
 				return -EFAULT;
 			ret =  !setDirection( &msetting );
 			break;
-		case MOTOR_DIVER_GET_DIRECTION:
+		case MOTOR_DRIVER_GET_DIRECTION:
 			if( copy_from_user( &msetting, (void*)arg, sizeof(struct motor_driver_setting) ) )
 				return -EFAULT;
 			if( !getDirection( &msetting ) )
@@ -247,7 +250,7 @@ static ssize_t show_motor_speed(struct device *dev, struct device_attribute *att
 	struct motor_driver_setting mdata;
 	trace("");
 	if( !motor_driver_get_settings( &mdata ) ) {
-			return snprintf(buf, PAGE_SIZE, "Setting: %i\n", mdata.speed);
+			return snprintf(buf, PAGE_SIZE, "Setting: %i\n", mdata.pwm_duty_cycle);
 	}
 	return 0;
 }

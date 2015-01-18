@@ -6,6 +6,7 @@
 #include <asm/io.h>
 #include <mach/platform.h>
 #include <linux/interrupt.h>
+#include <linux/gpio.h>
 #include <asm/irq.h>
 #include "encoder.h"
 #include "../gpio/gpio.h"
@@ -24,9 +25,9 @@
 static int g_Major = 0;
 static struct class* g_Class = NULL;
 static struct device* g_Device = NULL;
-int interruptID = 0;		  		// unique interrupt ID
+
 volatile int encoderPulseCount = 0;	
-int ret = 0;
+volatile int encoderPosition = 5;
 static int debug = 0;
 module_param(debug, int, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
@@ -35,73 +36,73 @@ struct gpio_status encoderpin1;
 struct gpio_status encoderpin2;
 
 // =================================================================================
-// deze code wordt uitgevoerd als er een interrupt is
+// interrupt handler
 // =================================================================================
-static irqreturn_t isr_handler(int irq_counter, void *data)
-{
+static irqreturn_t isr_handler(int irq_id, void *data)
+{ 
 	encoderPulseCount++;
+	gpio_read(&encoderpin2);
+	if (encoderpin2.value == 1)
+	{
+		encoderPosition = 0;
+	}  
+	else
+	{ 
+		encoderPosition = 1;
+	}
 	return IRQ_HANDLED;
 }
 // =================================================================================
-// geeft interrupt weer vrij (als je geen interrupts meer wilt gebruiken)
+// free interrupt 
 // =================================================================================
 void gpio_reset_all_interrupt_event(int irq)
 {
 	free_irq(irq, NULL);	// free interrupt
 }
 
-	
 int encoder_data_set_config(struct encoder_data* arg)
 {
+	int interruptID ;		  		// unique interrupt ID
+	int ret = 0;
 	// set encoder data
 	trace("");
 	encoderpin1.pinNr = arg->encoder1_pinnr;
 	encoderpin1.function = INPUT;
 	encoderpin1.pull_up_down = 	PULL_OFF;		   //PULL_DOWN_ENABLE, PULL_UP_ENABLE, PULL_OFF)
-	encoderpin1.event_detect = RISING_EDGE_DETECT;
+	//encoderpin1.event_detect = RISING_EDGE_DETECT;
 	
 	encoderpin2.pinNr = arg->encoder2_pinnr;
 	encoderpin2.function = INPUT;
 	encoderpin2.pull_up_down = 	PULL_OFF;		   //PULL_DOWN_ENABLE, PULL_UP_ENABLE, PULL_OFF)
-	encoderpin2.event_detect = RISING_EDGE_DETECT;
+	encoderpin2.event_detect = NO_DETECT;
 	
 	gpio_set_config(&encoderpin1);
 	gpio_set_config(&encoderpin2);
-	
-		
 	// Request to IRQ
-	//interruptID = gpio_to_irq(pin);	// met deze regel zeg je dat je pin als interrupt wilt gebruiken. wat er gereturnt wordt is het unieke nr voor die interrupt
-
-	// check if request is succesfull	
-	if(ret < 0) 
+	interruptID = gpio_to_irq(encoderpin1.pinNr);
+	if(interruptID < 0) 
 	{
-		error("Unable to request IRQ: %d", ret );
+		error("Unable to request IRQ: %d", interruptID );
 		return -1;
 	}
-		
-	//	parameters
-	// 1e is de interrupt die je wilt gebruiken
-	// 2e is de functie die wordt aangeroepen bij een interrupt
-	// 3e is wanneer een interrupt moet zijn( voorbeeld is bij rising edge. (IRQF_DISABLED) kun je zo overnemen weet ik zo even niet wat die doet
-	// 4e is de naam
-	// 5e moet je op NULL zetten (weet zo even niet wat die doet)
-	ret = request_irq(interruptID, isr_handler, IRQF_TRIGGER_RISING | IRQF_DISABLED, "voorbeeld_interrupt", NULL);
+	ret = request_irq(interruptID, isr_handler, IRQF_TRIGGER_RISING | IRQF_DISABLED, "encoder interrupt", NULL);
 	return 0;
 }
 EXPORT_SYMBOL(encoder_data_set_config);
 
-int get_pulse_count(struct encoder_data* arg)
+int get_rotation_speed(struct encoder_data* arg)
 {
-	gpio_get_irqCount(&encoderpin1);
-	encoderpin1.irqCount = arg->pulsecount;
+
 	return 0;
 }
-EXPORT_SYMBOL(get_pulse_count);
+EXPORT_SYMBOL(get_rotation_speed);
 
 int get_direction(struct encoder_data* arg)
 {
+	arg->direction = encoderPosition;
+	printk("encoderPosistion = %d\n", encoderPosition );
+	printk("encoderPulsecount = %d\n", encoderPulseCount );
 	
-
 	return 0;
 }
 EXPORT_SYMBOL(get_direction);
@@ -122,7 +123,7 @@ static long encoder_ioctl(struct file *file, unsigned int command, unsigned long
 		case ENCODER_SPEED:
 			if( copy_from_user( &edata, (void*)arg, sizeof(struct encoder_data) ) )
 				return -EFAULT;
-			ret =  !get_pulse_count( &edata );
+			ret =  !get_rotation_speed( &edata );
 			break;
 		case ENCODER_DIRECTION:
 			if( copy_from_user( &edata, (void*)arg, sizeof(struct encoder_data) ) )
