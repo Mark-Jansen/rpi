@@ -7,15 +7,15 @@ struct ultrasoon_data {
 };
 
 struct ultrasoon_config{
-	int pinNr_Trigger;
-	int pinNr_echo_1;
-	int pinNr_echo_2;
+	int pinNr_Trigger;		//default 0
+	int pinNr_echo_1;		//default 0
+	int pinNr_echo_2;		//default 0 // only used if 2 sensors on 1 object
 };
 
-#define FRONT_SENSOR		0
+#define FRONT_SENSOR	0
 #define BACK_SENSOR		1
 #define	HIGH			1
-#define LOW			0
+#define LOW				0
 
 #define ULTRASOON_DEVICE		"/dev/ultrasoon"
 

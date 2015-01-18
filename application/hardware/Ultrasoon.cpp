@@ -18,6 +18,13 @@ Ultrasoon::Ultrasoon(int triggerPin, int echoPin)
 	, mEchoPin( echoPin )
 >>>>>>> master
 {  
+//Set config IO setup
+	ultrasoon_config cfg= {0};
+	cfg.pinNr_Trigger = mTriggerPin;
+	cfg.pinNr_echo_1 = mEchoPin;
+	
+	mSensor.ioctl( ULTRASOON_SET_CONFIG, cfg );
+
 }
 
 Ultrasoon::~Ultrasoon() 
@@ -31,11 +38,23 @@ int Ultrasoon::getDistance(void)
 =======
 bool Ultrasoon::isInitialized() const
 {
+	
+	
+	//if( !mSensor.ioctl( ULTRASOON_SET_CONFIG,cfg ) )
+	//	return false;
+	
+
 	return mSensor.isOpen();
+
 }
 
 int Ultrasoon::getDistance(void)
 {
+	ultrasoon_data data = {0};
+	
+	mSensor.ioctl(ULTRASOON_GET_DISTANCE,data);
+	return data.distance;
+	
 	//std::cerr << "TODO: " << __PRETTY_FUNCTION__ << std::endl;
 >>>>>>> master
 }

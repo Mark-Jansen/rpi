@@ -25,7 +25,9 @@
 static int g_Major = 0;
 static struct class* g_Class = NULL;
 static struct device* g_Device = NULL;
-
+struct timespec time_spec1;	
+struct timespec time_spec2;	
+long time;
 volatile int encoderPulseCount = 0;	
 volatile int encoderPosition = 5;
 static int debug = 0;
@@ -92,7 +94,17 @@ EXPORT_SYMBOL(encoder_data_set_config);
 
 int get_rotation_speed(struct encoder_data* arg)
 {
-
+	int pulsecount = encoderPulseCount;
+	int rspeed = 0;
+	getnstimeofday(&time_spec1);	// get current time
+	while(!((encoderPulseCount - pulsecount) == 12))
+	{
+		// wait till 12x pulse is over
+	}
+	getnstimeofday(&time_spec2);	//get current time to measure
+	time = time_spec2.tv_nsec - time_spec1.tv_nsec;	 // time for 1 rotation
+	rspeed = 60000000/time; 
+	arg->rotation_speed = rspeed;
 	return 0;
 }
 EXPORT_SYMBOL(get_rotation_speed);

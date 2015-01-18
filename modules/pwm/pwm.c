@@ -48,6 +48,12 @@ enum hrtimer_restart cb1(struct hrtimer *t) {
 		gpio_write(&sw_pwm);
 		if (g_Settings[SW_PWM_CH].duty_cycle <= MAX_DUTY_CYCLE) {
 			unsigned long t_ns = ((MICRO_SEC * 10 * g_Settings[SW_PWM_CH].duty_cycle) / (g_Settings[SW_PWM_CH].frequency)); //calculate time when to generate falling edge
+			// microseconds * 10 * duty -> 1000000 * 10 * 100 = nanoseconds -> 1000000 * 1000 = 1000000000 nanoseconds = 1 sec 
+			// 1000000000 / freq -> 1000000000 / 25000 = 40000 ns = 0.00004 sec 	
+			// example at 50% duty - > 1000000 * 10 * 50 = 500000000 ns = 0.5sec
+			// 500000000 / 25000 - > 20000 ns = 0.00002 sec
+			// 0.00004 is frequency (25kHz)
+			// 0.00002 is at duty 50% is half of frequency
 			ktime_t t2 = ktime_set( 0, t_ns ); //convert time from nanoseconds into ktime_t
 			hrtimer_start(&tm2, t2, HRTIMER_MODE_REL); //start timer2 which expires after t2 (dutycycle) (let timer2 create falling edge)
 		}
@@ -379,7 +385,9 @@ static void software_pwm_init(void)
 	g_Settings[SW_PWM_CH].duty_cycle = 0;
 	g_Settings[SW_PWM_CH].enabled    = FALSE; 
 
-	t_ns = (NANO_SEC)/DEFAULT_FREQ; 
+	t_ns = (NANO_SEC)/DEFAULT_FREQ; //calculate ns value for timer (microseconds * 1000 / freq = nanoseconds) -> 100000 * 1000 / 25000 = 40000 nanoseconds 
+	                                                                                                                                   //= 0.00004 seconds
+																																	   // 1sec / 25000Hz = 0.00004 seconds																																
 	hrtimer_init(&tm1, CLOCK_MONOTONIC, HRTIMER_MODE_REL); //initialize timer tm1
 	hrtimer_init(&tm2, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	t1 = ktime_set( 0, t_ns ); //set ktime_t variable from a seconds/nanoseconds value

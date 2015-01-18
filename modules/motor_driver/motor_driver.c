@@ -2,9 +2,6 @@
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/ioctl.h>
-//#include <linux/delay.h> 
-//#include <linux/hrtimer.h>
-//#include <linux/sched.h>
 #include <linux/uaccess.h>		//copy_[from/to]_user
 #include <asm/io.h>
 #include <mach/platform.h>
@@ -17,8 +14,6 @@
 #define DRV_NAME			"motor_driver"
 #define DRV_REV				"r1"
 #define MOTOR_DRIVER_MAJOR	0
-
-
 
 #define trace(format, arg...) do { if( debug & 1 ) pr_info( DRV_NAME ": %s: " format "\n", __FUNCTION__, ## arg ); } while (0)
 #define info(format, arg...) pr_info( DRV_NAME ": " format "\n", ## arg )
@@ -99,7 +94,8 @@ EXPORT_SYMBOL(setSpeed);
 
 int getSpeed(struct motor_driver_setting* arg)
 {	
-	
+	get_rotation_speed(&enc_data);
+	arg->speed = enc_data.rotation_speed;
 	return 0;
 }
 EXPORT_SYMBOL(getSpeed);

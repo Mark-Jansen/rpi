@@ -22,9 +22,9 @@ struct 	encoder_data {
 int encoder_data_set_config(struct encoder_data* arg);
 
 // =================================================================================
-// int get_pulse_count(struct encoder_data* arg);
+// int get_rotation_speed(struct encoder_data* arg);
 // Pre : 
-// Post: get pulse count 
+// Post: get rotation per second
 // =================================================================================
 int get_rotation_speed(struct encoder_data* arg);
 
