@@ -24,7 +24,8 @@ int Ultrasoon_controller::delayMS() const
 
 void Ultrasoon_controller::onBeforeRun()
 {
-	//std::cerr << "Initialize ultrasoon" << std::endl;
+	std::cerr << "Initialize ultrasoon" << std::endl;
+	
 	if( !mFront->isInitialized() ) {
 		ERR("Could not initialize front Ultrasoon");
 		stop();
@@ -37,7 +38,31 @@ void Ultrasoon_controller::onBeforeRun()
 
 void Ultrasoon_controller::onRun()
 {
-	//std::cerr << "read ultrasoon" << std::endl;
+	int distaneValue = 0;
+	std::cerr << "Distance was: " << distaneValue << "cm"<< std::endl;
+	std::cerr << "reading Front ultrasoon sensor" << std::endl;
+	distaneValue = mFront->getDistance();
+	std::cerr << "Distance: " << distaneValue << "cm"<< std::endl;
+	
+	std::cerr << "read Back ultrasoon sensor" << std::endl;
+	distaneValue = mBack->getDistance();
+	std::cerr << "Distance: " << distaneValue << "cm"<< std::endl;
+	
 	//std::cerr << "process data" << std::endl;
-	//std::cerr << "store data" << std::endl;
+	//std::cerr << "store data:" << std::endl;
+	
+	
+	
 }
+
+
+
+
+
+
+
+
+
+
+
+

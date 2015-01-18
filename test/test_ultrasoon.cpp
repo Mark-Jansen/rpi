@@ -38,7 +38,7 @@ int readConfig( int fd, struct ultrasoon_config* cfg )
 
 int writeConfig( int fd, struct ultrasoon_config* cfg)
 {
-	printf( "DATA to SET config:\nTrigger_port: %d\nEcho_port1: %d\nEcho_port2: %d\n", cfg->pinNr_Trigger, cfg->pinNr_echo_1,cfg->pinNr_echo_2);
+	printf( "DATA to SET the config:\nTrigger_port: %d\nEcho_port1: %d\nEcho_port2: %d\n", cfg->pinNr_Trigger, cfg->pinNr_echo_1,cfg->pinNr_echo_2);
 	if( ioctl(fd, ULTRASOON_SET_CONFIG, cfg) == -1) {
 		perror( "ioctl set" );
 		close( fd );
@@ -64,29 +64,30 @@ int main(int arc, char **argv)
 		return 1;
 	}
 	
-	printf( "TEST: GET Distance from Front sensor\n");
-	if( read( fd, &data ) ) {
+	if( readConfig( fd, &cfg ) ) {
 		return 2;
 	}
 	
-	data.type = 1;
-	printf( "TEST: GET Distance from Back sensor\n");
-	if( read( fd, &data ) ) {
+	cfg.pinNr_Trigger = 28;
+	cfg.pinNr_echo_1 = 30;
+	
+	if( writeConfig( fd, &cfg ) ) {
 		return 3;
 	}
 	
-	printf( "TEST: GET current config\n");
-	if( readConfig( fd, &cfg ) ) {
+	if( read( fd, &data ) ) {
 		return 4;
 	}
 	
-	cfg.pinNr_echo_1 = 25;
-	printf( "TEST: SET new config\n");
+	cfg.pinNr_Trigger = 29;
+	cfg.pinNr_echo_1 = 31;
+	
+	printf( "SET new config for 2e sensor \n");
 	if( writeConfig( fd, &cfg ) ) {
 		return 5;
 	}
-	printf( "TEST: GET current config\n");
-	if( readConfig( fd, &cfg ) ) {
+	
+	if( read( fd, &data ) ) {
 		return 6;
 	}
 	
