@@ -33,7 +33,7 @@ static struct ultrasoon_config g_Config = {
 struct gpio_status trigger_port;
 struct gpio_status echo_port;
 
-static int debug = 1;
+static int debug = 0;
 
 module_param(debug, int, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
@@ -153,8 +153,8 @@ if(debug && GPIO_TIMEOUT_SEC > 0)
 		//TBV timeout
 		if(start_timeVal.tv_nsec > timeout_start.tv_nsec && GPIO_TIMEOUT_SEC > 0 )
 		{
-			printk(KERN_INFO "GPIO TIME OUT @ Line: %d \nstart_timeVal was: %lu\n",__LINE__,start_timeVal.tv_nsec);
-			printk(KERN_INFO "Timeout time was: %lu",timeout_start.tv_nsec);
+			printk(KERN_INFO "TIME OUT!, Echo did not go HIGH\n");//@ Line: %d \nstart_timeVal was: %lu\n",__LINE__,start_timeVal.tv_nsec);
+			//printk(KERN_INFO "Timeout time was: %lu",timeout_start.tv_nsec);
 			return 0;
 		}
 	}
@@ -172,8 +172,8 @@ if(debug && GPIO_TIMEOUT_SEC > 0)
 		//TBV timeout
 		if(end_timeVal.tv_nsec > timeout_start.tv_nsec && GPIO_TIMEOUT_SEC > 0)
 		{
-			printk(KERN_INFO "GPIO TIME OUT @ Line: %d / start_timeVal was: %lu\n",__LINE__,start_timeVal.tv_nsec);
-			printk(KERN_INFO "Timeout time is: %lu",timeout_start.tv_nsec);
+			printk(KERN_INFO "TIME OUT!, echo did not go LOW\n");// OUT @ Line: %d / start_timeVal was: %lu\n",__LINE__,start_timeVal.tv_nsec);
+			//printk(KERN_INFO "Timeout time is: %lu",timeout_start.tv_nsec);
 			return 0;
 		}
 	}
