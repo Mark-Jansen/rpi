@@ -9,7 +9,7 @@
 #include "ultrasoon.h"
 
 #define DRV_NAME			"ultrasoon"
-#define DRV_REV				"r1"
+#define DRV_REV				"r2"
 #define ultrasoon_MAJOR			 0
 
 #define trace(format, arg...) do { if( debug & 1 ) pr_info( DRV_NAME ": %s: " format "\n", __FUNCTION__, ## arg ); } while (0)
@@ -73,6 +73,7 @@ int ultrasoon_measure_distance(struct ultrasoon_config* cfg,struct ultrasoon_dat
 	struct timespec timeout_start	= {0};
 	struct timespec start_timeVal   = {0};
 	struct timespec end_timeVal	 	= {0};
+	struct timespec delta_timeVal 	= {0};
 
 	trigger_port.pinNr 		= cfg->pinNr_Trigger;
 	trigger_port.value 		= LOW;
@@ -183,7 +184,11 @@ if(debug && GPIO_TIMEOUT_SEC > 0)
 		}
 	}
 
-	time_difference = end_timeVal.tv_nsec - start_timeVal.tv_nsec;
+	delta_timeVal = timespec_sub(end_timeVal,start_timeVal);
+	time_difference = delta_timeVal.tv_sec * 100000000;
+	time_difference += delta_timeVal.tv_nsec;
+	
+	//time_difference = end_timeVal.tv_nsec - start_timeVal.tv_nsec;
 	
 //##########################	DEBUG DATA		##########################
 if(debug)
