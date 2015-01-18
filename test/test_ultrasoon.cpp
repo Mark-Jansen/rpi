@@ -68,7 +68,7 @@ int main(int arc, char **argv)
 	if( read( fd, &data ) ) {
 		return 2;
 	}
-	
+	/*
 	data.type = 1;
 	printf( "TEST: GET Distance from Back sensor\n");
 	if( read( fd, &data ) ) {
@@ -80,7 +80,11 @@ int main(int arc, char **argv)
 		return 4;
 	}
 	
-	cfg.pinNr_echo_1 = 25;
+	
+	cfg.pinNr_Trigger = 28;
+	cfg.pinNr_echo_1 = 30;
+	cfg.pinNr_echo_2 = 30;
+	
 	printf( "TEST: SET new config\n");
 	if( writeConfig( fd, &cfg ) ) {
 		return 5;
@@ -89,6 +93,6 @@ int main(int arc, char **argv)
 	if( readConfig( fd, &cfg ) ) {
 		return 6;
 	}
-	
+	*/
 	close( fd );
 }

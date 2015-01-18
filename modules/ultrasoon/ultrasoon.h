@@ -12,10 +12,10 @@ struct ultrasoon_config{
 	int pinNr_echo_2;
 };
 
-#define FRONT_SENSOR		0
+#define FRONT_SENSOR	0
 #define BACK_SENSOR		1
 #define	HIGH			1
-#define LOW			0
+#define LOW				0
 
 #define ULTRASOON_DEVICE		"/dev/ultrasoon"
 
