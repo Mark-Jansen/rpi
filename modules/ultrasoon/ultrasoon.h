@@ -3,11 +3,12 @@
 
 struct ultrasoon_data {
 	int distance;		//Distance in CM.
-	int type;			//0 == Front sensor , 1== Back sensor
+	int type;			//0 == Sensor_1 , 1== Sensor_2
 };
 
 struct ultrasoon_config{
-	int pinNr_Trigger;		//default 0
+	int pinNr_Trigger_1;	//default 0
+	int pinNr_Trigger_2;	//default 0
 	int pinNr_echo_1;		//default 0
 	int pinNr_echo_2;		//default 0 // only used if 2 sensors on 1 object
 };
