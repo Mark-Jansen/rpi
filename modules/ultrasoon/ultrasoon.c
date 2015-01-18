@@ -67,7 +67,7 @@ EXPORT_SYMBOL(ultrasoon_get_config);
 
 int ultrasoon_measure_distance(struct ultrasoon_config* cfg,struct ultrasoon_data* result)
 {
-	unsigned long GPIO_TIMEOUT_SEC 	= 200; //== 0.2sec // 0 == OFF // More 18.5 == useless because of the max timeout
+	unsigned long GPIO_TIMEOUT_SEC 	= 200; //== 200ms // 0 == OFF // More 18.5 == useless because of the max timeout
 	long int time_difference		= 0;
 	
 	struct timespec timeout_start	= {0};
@@ -112,9 +112,10 @@ if(debug)
 		getnstimeofday(&timeout_start);// = current_kernel_time();
 		timeout_start.tv_nsec += GPIO_TIMEOUT_SEC;
 		
-		if( timeout_start.tv_nsec >= 1000000000)//indien klokje rond.
+		if( timeout_start.tv_nsec >= 1000000000)//indien nieuwe seconde .
 		{							 
 			timeout_start.tv_nsec -= 1000000000;
+			timeout_start.tv_sec++;
 		}
 	}
 	
@@ -151,7 +152,9 @@ if(debug && GPIO_TIMEOUT_SEC > 0)
 		getnstimeofday(&start_timeVal);
 				
 		//TBV timeout
-		if(start_timeVal.tv_nsec > timeout_start.tv_nsec && GPIO_TIMEOUT_SEC > 0 )
+		if(start_timeVal.tv_nsec > timeout_start.tv_nsec && 
+			start_timeVal.tv_sec >= timeout_start.tv_sec &&	
+			GPIO_TIMEOUT_SEC > 0 )
 		{
 			printk(KERN_INFO "TIME OUT!, Echo did not go HIGH\n");//@ Line: %d \nstart_timeVal was: %lu\n",__LINE__,start_timeVal.tv_nsec);
 			//printk(KERN_INFO "Timeout time was: %lu",timeout_start.tv_nsec);
@@ -170,7 +173,9 @@ if(debug && GPIO_TIMEOUT_SEC > 0)
 		getnstimeofday(&end_timeVal);
 		
 		//TBV timeout
-		if(end_timeVal.tv_nsec > timeout_start.tv_nsec && GPIO_TIMEOUT_SEC > 0)
+		if(end_timeVal.tv_nsec > timeout_start.tv_nsec &&
+			end_timeVal.tv_sec >= timeout_start.tv_sec &&
+			GPIO_TIMEOUT_SEC > 0)
 		{
 			printk(KERN_INFO "TIME OUT!, echo did not go LOW\n");// OUT @ Line: %d / start_timeVal was: %lu\n",__LINE__,start_timeVal.tv_nsec);
 			//printk(KERN_INFO "Timeout time is: %lu",timeout_start.tv_nsec);
