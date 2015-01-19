@@ -1,21 +1,13 @@
 #include "Motor.h"
-//#include <motor/motor.h> //TODO
-
-//TODO
-//motordriver has to be pushed to master
-//this application driver uses motor.h (from linux kernel module)
-//commented code can be uncommented 
-
-
-
+#include <motor_driver/motor_driver.h> //TODO
 #include <iostream>
-
-//#include "BalancerDefines.h"
-//
-//Motor::Motor( const Config& cfg )
-//	: mSensor( MOTOR_DEVICE, O_RDWR )
 #include <pwm/pwm.h>
 #include "BalancerDefines.h"
+#include <generic/Logger.h>
+
+//TODO
+//this application driver uses motor.h (from linux kernel module)
+//commented code can be uncommented 
 
 #define FORWARD			1
 #define BACKWARD 		2
@@ -36,42 +28,42 @@ Motor::~Motor()
 
 void Motor::setSpeed(int speed)
 {
-    /*
-    motor_driver_data md = {0};
-	md.pwm = speed;
+    motor_driver_setting md;
+	mSensor.ioctl(MOTOR_DRIVER_GET_SETTINGS, md);
+	md.pwm_duty_cycle = speed;
 	mSpeed = speed; //save speed in object motor
-	if( !mSensor.ioctl( ioctl, md ) ) {   //TODO change ioctl to correct ioctl #define
-		ERR("Writing setSpeed to motor on pwm pin" << mConfig.PwmPin);
+	if( !mSensor.ioctl( MOTOR_DRIVER_SET_SPEED, md ) ) {   
+		ERR("Writing setSpeed to motor on channel: " << md.pwm_channel);
 	}
-	*/
 }
 
 int Motor::getSpeed(void)
 {
-	return mSpeed;
+	return mSpeed; //TODO
 }
     
 void Motor::setDirection(Dir d)
 {
-    /*
+    motor_driver_setting md;
+	mSensor.ioctl(MOTOR_DRIVER_GET_SETTINGS, md);
 	switch( d ) {
 	case Dir::Forward:
-	   //md.direction_pin1 = 
-	   //md.direction_pin2 =
+	   md.direction_pinL = 1; //check this
+	   md.direction_pinR = 0;
 		break;
 	case Dir::Backward:
-	   //md.direction_pin1 = 
-	   //md.direction_pin2 =
+	   md.direction_pinL = 0;
+	   md.direction_pinR = 1;	
 		break;
 	case Dir::None:
-	   //md.direction_pin1 = 
-	   //md.direction_pin2 =
+	   //md.direction_pinL = 
+	   //md.direction_pinR =
 		break;
 	}
-	if( !mSensor.ioctl( ioctl, md ) ) { //TODO change ioctl to correct ioctl #define
-		ERR("Writing setSetdirection to motor on pwm pin" << mConfig.PwmPin);
+	if( !mSensor.ioctl( MOTOR_DRIVER_SET_SETTINGS, md ) ) {
+		ERR("Writing setSetdirection to motor on channel: " << md.pwm_channel);
 	}
-	*/
+	
 }
 
 Dir Motor::getDirection(void)
@@ -90,18 +82,24 @@ int Motor::readEncoder(void) //TODO
 
 void Motor::turnOn(void)
 {
-    /*
-	motor_driver_data md = {0};
+    motor_driver_setting md;
+	mSensor.ioctl(MOTOR_DRIVER_GET_SETTINGS, md);
+	md.pwm_enable = true;
 	mEnabled = true;
-	//todo turn motor off 
-	*/
+	
+	if( !mSensor.ioctl( MOTOR_DRIVER_SET_SETTINGS, md ) ) {
+		ERR("Writing turnOff to motor on channel: " << md.pwm_channel);
+	}
 }
 
 void Motor::turnOff(void)
 {
-    /*
-	motor_driver_data md = {0};
+    motor_driver_setting md;
+	mSensor.ioctl(MOTOR_DRIVER_GET_SETTINGS, md);
+	md.pwm_enable = false;
 	mEnabled = false;
-	//todo turn motor off 
-	*/
+	
+	if( !mSensor.ioctl( MOTOR_DRIVER_SET_SETTINGS, md ) ) {
+		ERR("Writing turnOff to motor on channel: " << md.pwm_channel);
+	}
 }
