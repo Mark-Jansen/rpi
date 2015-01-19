@@ -25,14 +25,7 @@ Ultrasoon::~Ultrasoon()
 
 bool Ultrasoon::isInitialized() const
 {
-	
-	
-	//if( !mSensor.ioctl( ULTRASOON_SET_CONFIG,cfg ) )
-	//	return false;
-	
-
 	return mSensor.isOpen();
-
 }
 
 int Ultrasoon::getDistance(void)
