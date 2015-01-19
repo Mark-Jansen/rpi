@@ -83,7 +83,6 @@ int write_encoder(int fd, struct encoder_data* setting)
 
  int setSpeed(int fd, struct motor_driver_setting* config)
  {
-	 printf ("dutycycle_motor_A: %d \n", motor_A.pwm_duty_cycle);
 	 if( ioctl(fd, MOTOR_DRIVER_SET_SPEED,config ) == -1) { 
  		 perror( "set speed" ); 
 		 close( fd ); 
@@ -102,6 +101,16 @@ int getSpeed( int fd, motor_driver_setting *mded  )
 	return 0;
 }
 
+int setDirection(int fd, motor_driver_setting* config)
+{
+if( ioctl(fd, MOTOR_DRIVER_SET_DIRECTION , config ) == -1) {
+		perror( "ioctl get" );
+		close( fd );
+		return -1;
+	}
+	return 0;
+}
+
 int getDirection(int fd, motor_driver_setting* config)
 {
 if( ioctl(fd, MOTOR_DRIVER_GET_DIRECTION , config ) == -1) {
@@ -113,7 +122,6 @@ if( ioctl(fd, MOTOR_DRIVER_GET_DIRECTION , config ) == -1) {
 	//printf ("direction B: %d \n", motor_B.direction);
 	return 0;
 }
-
 
 void init_motor_driver_setting()
 {
@@ -169,24 +177,35 @@ int main()
 	char direction;
 
 	
-	int fd = open("/dev/motor_driver", O_RDWR);
-	int fd1 = open("/dev/encoder", O_RDWR); 
-	if (fd == -1) {
+	int fd_motor_A = open("/dev/motor_driver", O_RDWR);
+	int fd_motor_B = open("/dev/motor_driver", O_RDWR);
+	int fd_encoder_A = open("/dev/encoder", O_RDWR); 
+	int fd_encoder_B = open("/dev/encoder", O_RDWR); 
+	if (fd_motor_A == -1) {
 		perror( "open" );
 		return 1;
 	}
 	
-	if (fd1 == -1) {
+	if (fd_motor_B == -1) {
+		perror( "open" );
+		return 1;
+	}
+	if (fd_encoder_A == -1) {
+		perror( "open" );
+		return 1;
+	}
+	
+	if (fd_encoder_B == -1) {
 		perror( "open" );
 		return 1;
 	}
 	
 	init_motor_driver_setting();
 	init_encoder_setting();
-	write(fd,&motor_A);
-	write(fd,&motor_B);
-	write_encoder(fd1,&encoder_A);
-	write_encoder(fd1,&encoder_B);
+	write(fd_motor_A,&motor_A);
+	write(fd_motor_B,&motor_B);
+	write_encoder(fd_encoder_A,&encoder_A);
+	write_encoder(fd_encoder_B,&encoder_B);
 	while(!close_menu)
 	{
 		showMenu();
@@ -201,7 +220,7 @@ int main()
 				cin >> dutycycle;
 				cin.ignore();
 				motor_A.pwm_duty_cycle = dutycycle;
-				setSpeed(fd,&motor_A);
+				setSpeed(fd_motor_A,&motor_A);
 				break;	
 			case '2':
 				cout << "Set direction motor A (SW_PWM),[L] or [R]" << endl;
@@ -211,13 +230,13 @@ int main()
 				{
 					motor_A.direction_pinL = 1;
 					motor_A.direction_pinR = 0;
-					write(fd,&motor_A);			
+					setDirection(fd_motor_A,&motor_A);			
 				}
 				else if (!( direction != 'R' && direction != 'r'))
 				{
 					motor_A.direction_pinL = 0;
 					motor_A.direction_pinR = 1;
-					write(fd,&motor_A);	
+					setDirection(fd_motor_A,&motor_A);	
 				}
 				break;
 			case '3':
@@ -225,7 +244,7 @@ int main()
 				cin >> dutycycle;
 				cin.ignore();
 				motor_B.pwm_duty_cycle = dutycycle;
-				setSpeed(fd,&motor_B);
+				setSpeed(fd_motor_B,&motor_B);
 				break;
 			case '4':
 				cout << "Set direction motor B (HW_PWM),[L] or [R]" << endl;
@@ -235,13 +254,13 @@ int main()
 				{
 					motor_B.direction_pinL = 1;
 					motor_B.direction_pinR = 0;
-					write(fd,&motor_B);
+					setDirection(fd_motor_B,&motor_B);
 				}
 				else if (!( direction != 'R' && direction != 'r'))
 				{
 					motor_B.direction_pinL = 0;
 					motor_B.direction_pinR = 1;
-					write(fd,&motor_B);
+					setDirection(fd_motor_B,&motor_B);
 				}
 				break;
 			case '5':
@@ -255,8 +274,8 @@ int main()
 					motor_A.direction_pinR = 0;
 					motor_B.direction_pinL = 1;
 					motor_B.direction_pinR = 0;
-					write(fd,&motor_A);
-					write(fd,&motor_B);
+					setDirection(fd_motor_A,&motor_A);
+					setDirection(fd_motor_B,&motor_B);
 				}
 				else if (!( direction != 'R' && direction != 'r'))
 				{
@@ -264,8 +283,8 @@ int main()
 					motor_A.direction_pinR = 1;
 					motor_B.direction_pinL = 0;
 					motor_B.direction_pinR = 1;
-					write(fd,&motor_A);
-					write(fd,&motor_B);
+					setDirection(fd_motor_A,&motor_A);
+					setDirection(fd_motor_B,&motor_B);
 				}
 				break;
 			case '6': // set speed motor A and B	
@@ -274,25 +293,28 @@ int main()
 				cin.ignore();
 				motor_A.pwm_duty_cycle = dutycycle;
 				motor_B.pwm_duty_cycle = dutycycle;
-				setSpeed(fd,&motor_A);
-				setSpeed(fd,&motor_B);
+				setSpeed(fd_motor_A,&motor_A);
+				setSpeed(fd_motor_B,&motor_B);
 				break;
 			case '7': // get speed motor A & B			
-				getSpeed(fd,&motor_A);
-				cout << "Speed motor A = " + motor_A.pwm_duty_cycle << endl;
-				getSpeed(fd,&motor_B);
-				cout << "Speed motor B = " + motor_B.pwm_duty_cycle << endl;
+				getSpeed(fd_motor_A,&motor_A);
+				cout << "Speed motor A = " << motor_A.speed << endl;
+				getSpeed(fd_motor_B,&motor_B);
+				cout << "Speed motor B = " << motor_B.speed << endl;
 				break;
 			case '8':
-				getDirection(fd,&motor_A);
-				getDirection(fd,&motor_B);
-				cout << "Direction motor A = " + motor_A.direction << endl;
-				cout << "Direction motor B = " + motor_B.direction << endl;
+				getDirection(fd_motor_A,&motor_A);
+				getDirection(fd_motor_B,&motor_B);
+				cout << "Direction motor A = " << motor_A.direction << endl;
+				cout << "Direction motor B = " << motor_B.direction << endl;
 				break;
 			
 			case '9':
 				close_menu = true;
-				close(fd);
+				close(fd_encoder_A);
+				close(fd_encoder_B);
+				close(fd_motor_A);
+				close(fd_motor_B);
 				break;	
 		}		
 	}	

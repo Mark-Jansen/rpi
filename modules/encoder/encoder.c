@@ -29,7 +29,9 @@ struct timespec time_spec1;
 struct timespec time_spec2;	
 long time;
 volatile int encoderPulseCount = 0;	
-volatile int encoderPosition = 5;
+volatile int encoderPosition = 0;
+
+
 static int debug = 0;
 module_param(debug, int, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
@@ -38,7 +40,7 @@ struct gpio_status encoderpin1;
 struct gpio_status encoderpin2;
 
 // =================================================================================
-// interrupt handler
+// interrupt handler 
 // =================================================================================
 static irqreturn_t isr_handler(int irq_id, void *data)
 { 
@@ -48,12 +50,14 @@ static irqreturn_t isr_handler(int irq_id, void *data)
 	{
 		encoderPosition = 0;
 	}  
-	else
+	else if (encoderpin2.value == 0)
 	{ 
 		encoderPosition = 1;
 	}
 	return IRQ_HANDLED;
 }
+
+
 // =================================================================================
 // free interrupt 
 // =================================================================================
@@ -94,16 +98,21 @@ EXPORT_SYMBOL(encoder_data_set_config);
 
 int get_rotation_speed(struct encoder_data* arg)
 {
+	int count = 0;
 	int pulsecount = encoderPulseCount;
 	int rspeed = 0;
 	getnstimeofday(&time_spec1);	// get current time
 	while(!((encoderPulseCount - pulsecount) == 12))
 	{
-		// wait till 12x pulse is over
+		if((pulsecount == encoderPulseCount) && (count > 11))
+		{
+			arg->rotation_speed = 0;
+			return 0;
+		}
 	}
 	getnstimeofday(&time_spec2);	//get current time to measure
 	time = time_spec2.tv_nsec - time_spec1.tv_nsec;	 // time for 1 rotation
-	rspeed = 60000000/time; 
+	rspeed = 1000000000/time; 
 	arg->rotation_speed = rspeed;
 	return 0;
 }
@@ -111,10 +120,7 @@ EXPORT_SYMBOL(get_rotation_speed);
 
 int get_direction(struct encoder_data* arg)
 {
-	arg->direction = encoderPosition;
-	printk("encoderPosistion = %d\n", encoderPosition );
-	printk("encoderPulsecount = %d\n", encoderPulseCount );
-	
+	arg->direction = encoderPosition;	
 	return 0;
 }
 EXPORT_SYMBOL(get_direction);

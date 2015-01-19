@@ -15,7 +15,7 @@ struct motor_driver_setting {
 	int pwm_frequency;
 	int pwm_duty_cycle;
 	int speed;
-	int direction;      // 0 is left , 1 is right
+	int direction;      // 0 is left , 1 is right from encoder
 };
 
 #define THERMIOC_MAGIC_MOTOR_DRIVER 	'M'

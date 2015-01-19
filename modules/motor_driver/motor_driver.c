@@ -40,20 +40,16 @@ int motor_driver_set_settings(struct motor_driver_setting* arg)
 	IN1_pin.pinNr = arg->direction_in1_pinnr;
 	IN1_pin.function = OUTPUT;
 	IN1_pin.value = arg->direction_pinL;
-	
 	IN2_pin.pinNr = arg->direction_in2_pinnr;
 	IN2_pin.function = OUTPUT;
-	IN2_pin.value = arg->direction_pinR;
-		
+	IN2_pin.value = arg->direction_pinR;	
 	pwm_setting.channel = arg->pwm_channel;
 	pwm_setting.pin = arg->pwm_pinnr;
 	pwm_setting.enabled =arg->pwm_enable;
 	pwm_setting.frequency = arg->pwm_frequency;
 	pwm_setting.duty_cycle = arg->pwm_duty_cycle;
-	
 	gpio_set_config(&IN1_pin);
 	gpio_set_config(&IN2_pin);
-	
 	gpio_write(&IN1_pin);
 	gpio_write(&IN2_pin);
 	pwm_set_settings(&pwm_setting);
@@ -94,6 +90,7 @@ EXPORT_SYMBOL(setSpeed);
 
 int getSpeed(struct motor_driver_setting* arg)
 {	
+	trace("");
 	get_rotation_speed(&enc_data);
 	arg->speed = enc_data.rotation_speed;
 	return 0;
@@ -103,6 +100,12 @@ EXPORT_SYMBOL(getSpeed);
 int setDirection(struct motor_driver_setting* arg) // 0 == left 1 == right
 {
 	trace("");
+	IN1_pin.pinNr = arg->direction_in1_pinnr;
+	IN2_pin.pinNr = arg->direction_in2_pinnr;
+	IN1_pin.value = arg->direction_pinL;
+	IN2_pin.value = arg->direction_pinR;
+	gpio_write(&IN1_pin);
+	gpio_write(&IN2_pin);
 	return 0;
 }
 EXPORT_SYMBOL(setDirection);
