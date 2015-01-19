@@ -3,9 +3,17 @@
 
 #include <generic/File.h>
 
+enum class Dir //direction
+{
+	None,
+	Forward,
+	Backward
+};
+
 class Motor
 {
 public:
+
 	struct Config
 	{
 		Config(int pwmPin, int dirPinForward, int dirPinReverse, int encoderPin_1, int encoderPin_2)
@@ -21,8 +29,8 @@ public:
 	~Motor();
 	void setSpeed(int speed);
 	int  getSpeed(void);
-    void setDirection(int direction);
-	int  getDirection(void);
+    void setDirection(Dir d);
+	Dir getDirection(void);
 	int  readEncoder(void); //TODO
 	void turnOff(void);
 	void turnOn(void);

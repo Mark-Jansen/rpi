@@ -32,12 +32,18 @@ void MotorController::setDirection( Direction dir )
 	switch( dir ) {
 	case Direction::Forward:
 		std::cerr << "Moving forward" << std::endl;
+		//mLeft->setDirection(Forward);
+		//mRight->setDirection(Forward);
 		break;
 	case Direction::Backward:
 		std::cerr << "Moving backward" << std::endl;
+		//mLeft->setDirection(Backward);
+		//mRight->setDirection(Backward);
 		break;
 	case Direction::None:
 		std::cerr << "Balancing" << std::endl;
+		//mLeft->setDirection(None);
+		//mRight->setDirection(None);
 		break;
 	}
 }
