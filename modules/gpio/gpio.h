@@ -1,6 +1,8 @@
 #ifndef GPIO_H
 #define GPIO_H
 
+#define GPIO_DEVICE			"/dev/gpio"
+
 /* I/O settings */ 
 struct gpio_status {
 	int pinNr;			// Number of GPIO pin

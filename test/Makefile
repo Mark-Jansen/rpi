@@ -34,7 +34,7 @@ motor_driver_test: motor_driver_test.cpp
 	$(CROSS_COMPILE)g++ motor_driver_test.cpp -o ../build/motor_driver_test -I../modules
 
 motor_driver_test_old: motor_driver_test_old.cpp
-	@echo "Building motor_driver_test"; \
+	@echo "Building motor_driver_test_old"; \
 	$(CROSS_COMPILE)g++ motor_driver_test_old.cpp -o ../build/motor_driver_test_old -I../modules
 	
 clean:
