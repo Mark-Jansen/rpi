@@ -9,7 +9,7 @@ endif
 
 CROSS_COMPILE:=$(L_BUILDROOT)/output/host/usr/bin/arm-linux-
 
-all: adc_test test_ultra gyro_test testpwm  motor_driver_test motor_driver_test_old
+all: adc_test test_ultra gyro_test testpwm motor_driver_test motor_driver_test_old
 
 .PHONY: all, clean
 

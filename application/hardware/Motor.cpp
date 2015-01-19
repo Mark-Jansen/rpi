@@ -10,12 +10,10 @@
 
 #include <iostream>
 
-<<<<<<< HEAD
-#include "BalancerDefines.h"
-
-Motor::Motor( const Config& cfg )
-	: mSensor( MOTOR_DEVICE, O_RDWR )
-=======
+//#include "BalancerDefines.h"
+//
+//Motor::Motor( const Config& cfg )
+//	: mSensor( MOTOR_DEVICE, O_RDWR )
 #include <pwm/pwm.h>
 #include "BalancerDefines.h"
 
@@ -26,7 +24,6 @@ Motor::Motor( const Config& cfg )
 
 Motor::Motor( const Config& cfg )
 	: mSensor( PWM_DEVICE, O_RDWR )
->>>>>>> master
 	, mConfig( cfg )
 	, mSpeed( 0 )
 	, mEnabled( 0 )

@@ -9,10 +9,7 @@
 #include "hardware/Battery.h"
 #include "hardware/Led.h"
 #include "hardware/Button.h"
-<<<<<<< HEAD
-=======
 #include <generic/Logger.h>
->>>>>>> master
 
 #include "BalancerDefines.h"
 
@@ -59,11 +56,7 @@ int Controller::run()
 	init();
 	while( !mPowerButton->wasPressed() ) {
 		if( !runFrame() ) {
-<<<<<<< HEAD
-			std::cerr << "runFrame abort" << std::endl;
-=======
 			ERR("runFrame abort");
->>>>>>> master
 		}
 	}
 	deinit();
@@ -72,16 +65,9 @@ int Controller::run()
 
 bool Controller::runFrame()
 {
-<<<<<<< HEAD
-	std::cerr << "read gyro" << std::endl;
-	std::cerr << "read ultrasoon" << std::endl;
-	std::cerr << "process data" << std::endl;
-	std::cerr << "output to motor controller" << std::endl;
-=======
 	//std::cerr << "read gyro" << std::endl;
 	//std::cerr << "read ultrasoon" << std::endl;
 	//std::cerr << "process data" << std::endl;
 	//std::cerr << "output to motor controller" << std::endl;
->>>>>>> master
 	return true;
 }

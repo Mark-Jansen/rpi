@@ -4,11 +4,8 @@
 #include <iostream>
 
 #include "BalancerDefines.h"
-<<<<<<< HEAD
-=======
 #include <generic/Logger.h>
 
->>>>>>> master
 
 MotorController::MotorController()
 {
@@ -26,10 +23,6 @@ MotorController::~MotorController()
 
 void MotorController::setSpeed( int speed )
 {
-<<<<<<< HEAD
-	std::cerr << "Set left/right speed" << std::endl;
-=======
->>>>>>> master
 	//mLeft->setSpeed( speed );
 	//mRight->setSpeed( speed );
 }
