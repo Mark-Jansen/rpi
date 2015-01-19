@@ -9,7 +9,7 @@
 #include "ultrasoon.h"
 
 #define DRV_NAME			"ultrasoon"
-#define DRV_REV				"r2"
+#define DRV_REV				"r3"
 #define ultrasoon_MAJOR			 0
 
 #define trace(format, arg...) do { if( debug & 1 ) pr_info( DRV_NAME ": %s: " format "\n", __FUNCTION__, ## arg ); } while (0)
@@ -24,7 +24,8 @@ static struct device* g_Device = NULL;
 // spinlock used to protect the global config
 static DEFINE_SPINLOCK(g_Lock);
 static struct ultrasoon_config g_Config = {
-	.pinNr_Trigger = 0,
+	.pinNr_Trigger_1 = 0,
+	.pinNr_Trigger_2 = 0,
 	.pinNr_echo_1 = 0,
 	.pinNr_echo_2 = 0
 };
@@ -43,10 +44,24 @@ int ultrasoon_set_config(struct ultrasoon_config* cfg)
 	unsigned long flags;
 	trace("");
 	spin_lock_irqsave( &g_Lock, flags );
-	g_Config.pinNr_Trigger = cfg->pinNr_Trigger;
-	g_Config.pinNr_echo_1 = cfg->pinNr_echo_1;
-	g_Config.pinNr_echo_2 = cfg->pinNr_echo_2;
+	if(cfg->pinNr_Trigger_1 != 0)
+	{
+		g_Config.pinNr_Trigger_1 = cfg->pinNr_Trigger_1;
+		g_Config.pinNr_echo_2 = cfg->pinNr_echo_2;
+		if(debug)
+			printk(KERN_INFO "Config set for Sensor 1: T=%d, E=%d\n",cfg->pinNr_Trigger_1,cfg->pinNr_echo_1);	
+	}
+	
+	if(cfg->pinNr_Trigger_2 != 0)
+	{
+		g_Config.pinNr_Trigger_2 = cfg->pinNr_Trigger_2;
+		g_Config.pinNr_echo_2 = cfg->pinNr_echo_2;
+		if(debug)
+			printk(KERN_INFO "Config set for Sensor 2: T=%d, E=%d\n",cfg->pinNr_Trigger_2,cfg->pinNr_echo_2);	
+	}
+
 	spin_unlock_irqrestore( &g_Lock, flags );
+	
 	return 0;
 }
 EXPORT_SYMBOL(ultrasoon_set_config);
@@ -57,7 +72,8 @@ int ultrasoon_get_config(struct ultrasoon_config* cfg)
 	unsigned long flags;
 	trace("");
 	spin_lock_irqsave( &g_Lock, flags );
-	cfg->pinNr_Trigger = g_Config.pinNr_Trigger;
+	cfg->pinNr_Trigger_1 = g_Config.pinNr_Trigger_1;
+	cfg->pinNr_Trigger_2 = g_Config.pinNr_Trigger_2;
 	cfg->pinNr_echo_1 = g_Config.pinNr_echo_1;
 	cfg->pinNr_echo_2 = g_Config.pinNr_echo_2;
 	spin_unlock_irqrestore( &g_Lock, flags );
@@ -75,16 +91,22 @@ int ultrasoon_measure_distance(struct ultrasoon_config* cfg,struct ultrasoon_dat
 	struct timespec end_timeVal	 	= {0};
 	struct timespec delta_timeVal 	= {0};
 
-	trigger_port.pinNr 		= cfg->pinNr_Trigger;
+	
 	trigger_port.value 		= LOW;
 	trigger_port.function  	= OUTPUT;
 	result->distance 		= -1;
 		
 	//SET GPIO VOLGENS DE CFG CONFIG
 	if(result->type == FRONT_SENSOR)
-		echo_port.pinNr	= cfg->pinNr_echo_1;
+	{
+		trigger_port.pinNr	= cfg->pinNr_Trigger_1;
+		echo_port.pinNr		= cfg->pinNr_echo_1;
+	}
 	else
+	{
+		trigger_port.pinNr	= cfg->pinNr_Trigger_2;
 		echo_port.pinNr	= cfg->pinNr_echo_2;
+	}
 	
 	echo_port.function	= INPUT;
 	echo_port.value 	= LOW;
@@ -279,7 +301,7 @@ static ssize_t show_config(struct device *dev, struct device_attribute *attr, ch
 	trace("");
 	if( ultrasoon_get_config( &cfg ) )
 		return snprintf( buf, PAGE_SIZE, "Failed to read the config\n" );
-	return snprintf(buf, PAGE_SIZE, "Triger port: %d \nEcho_1: %d\nEcho_2: %d\n",cfg.pinNr_Trigger, cfg.pinNr_echo_1,cfg.pinNr_echo_2 );
+	return snprintf(buf, PAGE_SIZE, "Triger port1: %d \nEcho_1: %d\nEcho_2: %d\n",cfg.pinNr_Trigger_1, cfg.pinNr_echo_1,cfg.pinNr_echo_2 );
 }
 
 static ssize_t show_distance(struct device *dev, struct device_attribute *attr, char *buf)

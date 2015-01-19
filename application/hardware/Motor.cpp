@@ -43,7 +43,7 @@ void Motor::setSpeed(int speed)
     motor_driver_data md = {0};
 	md.pwm = speed;
 	mSpeed = speed; //save speed in object motor
-	if( !mSensor.ioctl( ioctl, md ) ) {
+	if( !mSensor.ioctl( ioctl, md ) ) {   //TODO change ioctl to correct ioctl #define
 		ERR("Writing setSpeed to motor on pwm pin" << mConfig.PwmPin);
 	}
 	*/
@@ -54,32 +54,33 @@ int Motor::getSpeed(void)
 	return mSpeed;
 }
     
-void Motor::setDirection(int direction)
+void Motor::setDirection(Dir d)
 {
     /*
-	motor_driver_data md = {0};
-	if(direction == FORWARD) 
-	{
-	  //md.direction_pin1 = 
-	  //md.direction_pin2 =
+	switch( d ) {
+	case Dir::Forward:
+	   //md.direction_pin1 = 
+	   //md.direction_pin2 =
+		break;
+	case Dir::Backward:
+	   //md.direction_pin1 = 
+	   //md.direction_pin2 =
+		break;
+	case Dir::None:
+	   //md.direction_pin1 = 
+	   //md.direction_pin2 =
+		break;
 	}
-	else if(direction == BACKWARD)
-	{
-	  //md.direction_pin1 = 
-	  //md.direction_pin2 = 
-	}
-	else
-	{
-	  //NONE
-	}
-	if( !mSensor.ioctl( ioctl, md ) ) {
+	if( !mSensor.ioctl( ioctl, md ) ) { //TODO change ioctl to correct ioctl #define
 		ERR("Writing setSetdirection to motor on pwm pin" << mConfig.PwmPin);
 	}
 	*/
 }
 
-int Motor::getDirection(void)
+Dir Motor::getDirection(void)
 {
+	
+	
 	//if      (direction1 == ...) && (direction2 == ...) return FORWARD;
 	//else if (direction1 == ...) && (direction2 == ...) return BACKWARD;
 	//else 											   return NONE;

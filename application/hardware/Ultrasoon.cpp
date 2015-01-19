@@ -1,29 +1,34 @@
 #include "Ultrasoon.h"
-
 #include <iostream>
-
 #include <ultrasoon/ultrasoon.h>
 #include "BalancerDefines.h"
+#include <generic/Logger.h>
 
-<<<<<<< HEAD
-Ultrasoon::Ultrasoon(int triggerPin, int echoPin, int type)
+Ultrasoon::Ultrasoon(int triggerPin, int echoPin,int Type)
 	: mSensor( ULTRASOON_DEVICE, O_RDWR )
 	, mTriggerPin( triggerPin )
 	, mEchoPin( echoPin )
-	, mType( type )
-=======
-Ultrasoon::Ultrasoon(int triggerPin, int echoPin)
-	: mSensor( ULTRASOON_DEVICE, O_RDWR )
-	, mTriggerPin( triggerPin )
-	, mEchoPin( echoPin )
->>>>>>> master
+	, mType( Type)
 {  
-//Set config IO setup
+	//Set config IO setup
 	ultrasoon_config cfg= {0};
-	cfg.pinNr_Trigger = mTriggerPin;
-	cfg.pinNr_echo_1 = mEchoPin;
 	
-	mSensor.ioctl( ULTRASOON_SET_CONFIG, cfg );
+	if(Type == 0)
+	{
+		cfg.pinNr_Trigger_1 = mTriggerPin;
+		cfg.pinNr_echo_1 = mEchoPin;
+	}
+	else if(Type ==1)
+	{
+		cfg.pinNr_Trigger_2 = mTriggerPin;
+		cfg.pinNr_echo_2 = mEchoPin;
+	}
+	else
+		WARN("Unknow Type:" << Type);
+
+	if( !mSensor.ioctl( ULTRASOON_SET_CONFIG, cfg ) ){
+		WARN("Ultrasoon set config ioctl failed");
+	}
 
 }
 
@@ -31,31 +36,19 @@ Ultrasoon::~Ultrasoon()
 {
 }
 
-<<<<<<< HEAD
-int Ultrasoon::getDistance(void)
-{
-	std::cerr << "TODO: " << __PRETTY_FUNCTION__ << std::endl;
-=======
 bool Ultrasoon::isInitialized() const
 {
-	
-	
-	//if( !mSensor.ioctl( ULTRASOON_SET_CONFIG,cfg ) )
-	//	return false;
-	
-
 	return mSensor.isOpen();
-
 }
 
 int Ultrasoon::getDistance(void)
 {
 	ultrasoon_data data = {0};
-	
+	data.type = mType;
+
 	mSensor.ioctl(ULTRASOON_GET_DISTANCE,data);
+	
 	return data.distance;
 	
-	//std::cerr << "TODO: " << __PRETTY_FUNCTION__ << std::endl;
->>>>>>> master
 }
 
