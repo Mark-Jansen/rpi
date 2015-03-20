@@ -34,7 +34,7 @@ static struct ultrasoon_config g_Config = {
 struct gpio_status trigger_port;
 struct gpio_status echo_port;
 
-static int debug = 0;
+static int debug = 1;
 
 module_param(debug, int, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(debug, "set debug flags, 1 = trace");
